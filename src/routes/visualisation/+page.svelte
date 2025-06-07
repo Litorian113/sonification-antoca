@@ -37,9 +37,9 @@
 		
 		// Determine instrument based on depth (adjusted ranges for better distribution)
 		if (depth > 80) {
-			// High depth: Double Bass (deeper earthquakes)
+			// High depth: Double Bass (deeper earthquakes) - use more recognizable pitches
 			if (magnitude >= 6.5) {
-				// High magnitude = lowest pitch
+				// High magnitude = lowest pitch (but not too low to be inaudible)
 				sounds.push('/double-bass/F0.wav');
 			} else if (magnitude >= 5.5) {
 				// Medium magnitude = medium pitch  
@@ -144,14 +144,13 @@
 			console.error('Error playing sound:', error);
 		}
 	};
-
 	const playSounds = async (soundFiles: string[]) => {
-		// Play multiple sounds simultaneously with slight delays for richness
-		soundFiles.forEach((soundFile, index) => {
-			setTimeout(() => {
-				playSound(soundFile);
-			}, index * 50); // 50ms delay between each instrument
-		});
+		// Play sounds one at a time to avoid overlapping interference
+		// For earthquake sonification, we want clear, distinct sounds rather than layered ones
+		if (soundFiles.length > 0) {
+			// Just play the first (main) sound to avoid audio glitching
+			playSound(soundFiles[0]);
+		}
 	};
 
 	const createShockwave = (magnitude: number) => {
