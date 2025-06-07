@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import * as THREE from 'three';
-	import earthquakeData from '../../data/earthquakeDATA.json';
+	import { onMount } from "svelte";
+	import * as THREE from "three";
+	import earthquakeData from "../../data/earthquakeDATA.json";
 
 	let container: HTMLElement;
 	let isPlaying = false;
@@ -16,61 +16,61 @@
 	let persistentDots: THREE.Mesh[] = []; // For persistent earthquake points
 	let audioContext: AudioContext;
 	let playButton: HTMLButtonElement;
-	
+
 	// Performance optimization: Pre-load audio buffers
 	const audioBuffers = new Map<string, AudioBuffer>();
 	let isAudioPreloaded = false;
-	
+
 	// Performance optimization: Pre-computed earthquake data
 	let sortedEarthquakeData: any[] = [];
-	
+
 	// Performance optimization: Reusable geometry and materials
 	let sharedShockwaveGeometry: THREE.SphereGeometry;
 	const shaderMaterialPool: THREE.ShaderMaterial[] = [];
-	
+
 	// Performance optimization: Frame limiting
 	let lastFrameTime = 0;
 	const targetFPS = 60;
-	const frameInterval = 1000 / targetFPS;	// Sound mapping: Depth determines instrument, Magnitude determines pitch within instrument
+	const frameInterval = 1000 / targetFPS; // Sound mapping: Depth determines instrument, Magnitude determines pitch within instrument
 	const getSoundFiles = (magnitude: number, depth: number): string[] => {
 		const sounds: string[] = [];
-		
+
 		// Determine instrument based on depth (adjusted ranges for better distribution)
 		if (depth > 80) {
 			// High depth: Double Bass (deeper earthquakes)
 			if (magnitude >= 6.5) {
 				// High magnitude = lowest pitch
-				sounds.push('/double-bass/F0.wav');
+				sounds.push("/double-bass/F0.wav");
 			} else if (magnitude >= 5.5) {
-				// Medium magnitude = medium pitch  
-				sounds.push('/double-bass/A1.wav');
+				// Medium magnitude = medium pitch
+				sounds.push("/double-bass/A1.wav");
 			} else {
 				// Low magnitude = highest pitch
-				sounds.push('/double-bass/G2.wav');
+				sounds.push("/double-bass/G2.wav");
 			}
 		} else if (depth > 20) {
 			// Medium depth: Piano (medium earthquakes)
 			if (magnitude >= 6.5) {
 				// High magnitude = lowest pitch
-				sounds.push('/piano/C1.wav');
+				sounds.push("/piano/C1.wav");
 			} else if (magnitude >= 5.5) {
 				// Medium magnitude = medium pitch
-				sounds.push('/piano/E2.wav');
+				sounds.push("/piano/E2.wav");
 			} else {
 				// Low magnitude = highest pitch
-				sounds.push('/piano/G4.wav');
+				sounds.push("/piano/G4.wav");
 			}
 		} else {
 			// Low depth: Theremin (shallow earthquakes)
 			if (magnitude >= 6.5) {
 				// High magnitude = lowest pitch
-				sounds.push('/theremin/F2.wav');
+				sounds.push("/theremin/F2.wav");
 			} else if (magnitude >= 5.5) {
 				// Medium magnitude = medium pitch
-				sounds.push('/theremin/A3.wav');
+				sounds.push("/theremin/A3.wav");
 			} else {
 				// Low magnitude = highest pitch
-				sounds.push('/theremin/G4.wav');
+				sounds.push("/theremin/G4.wav");
 			}
 		}
 
@@ -79,40 +79,51 @@
 	// Preload all audio files
 	const preloadAudio = async () => {
 		if (isAudioPreloaded) return;
-		
+
 		try {
 			if (!audioContext) {
 				audioContext = new AudioContext();
 			}
-					const audioFiles = [
+			const audioFiles = [
 				// Piano sounds
-				'/piano/C1.wav', '/piano/C2.wav', '/piano/C3.wav',
-				'/piano/E1.wav', '/piano/E2.wav', '/piano/E4.wav', 
-				'/piano/G1.wav', '/piano/G2.wav', '/piano/G4.wav',
+				"/piano/C1.wav",
+				"/piano/C2.wav",
+				"/piano/C3.wav",
+				"/piano/E1.wav",
+				"/piano/E2.wav",
+				"/piano/E4.wav",
+				"/piano/G1.wav",
+				"/piano/G2.wav",
+				"/piano/G4.wav",
 				// Theremin sounds
-				'/theremin/F2.wav', '/theremin/A3.wav', '/theremin/G4.wav',
+				"/theremin/F2.wav",
+				"/theremin/A3.wav",
+				"/theremin/G4.wav",
 				// Choir sounds (commented out)
 				// '/choir/B2.wav', '/choir/F4.wav', '/choir/G5.wav',
 				// Double bass sounds
-				'/double-bass/A1.wav', '/double-bass/F0.wav', '/double-bass/G2.wav'
+				"/double-bass/A1.wav",
+				"/double-bass/F0.wav",
+				"/double-bass/G2.wav",
 			];
-			
+
 			const loadPromises = audioFiles.map(async (file) => {
 				try {
 					const response = await fetch(file);
 					const arrayBuffer = await response.arrayBuffer();
-					const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+					const audioBuffer =
+						await audioContext.decodeAudioData(arrayBuffer);
 					audioBuffers.set(file, audioBuffer);
 				} catch (error) {
 					console.warn(`Failed to load audio file: ${file}`, error);
 				}
 			});
-			
+
 			await Promise.all(loadPromises);
 			isAudioPreloaded = true;
-			console.log('Audio preloading completed');
+			console.log("Audio preloading completed");
 		} catch (error) {
-			console.error('Audio preloading failed:', error);
+			console.error("Audio preloading failed:", error);
 		}
 	};
 	const playSound = async (soundFile: string) => {
@@ -120,7 +131,7 @@
 			if (!audioContext) {
 				audioContext = new AudioContext();
 			}
-			
+
 			// Use preloaded buffer if available
 			const audioBuffer = audioBuffers.get(soundFile);
 			if (audioBuffer) {
@@ -130,18 +141,19 @@
 				source.start();
 				return;
 			}
-			
+
 			// Fallback to dynamic loading
 			const response = await fetch(soundFile);
 			const arrayBuffer = await response.arrayBuffer();
-			const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
-			
+			const decodedBuffer =
+				await audioContext.decodeAudioData(arrayBuffer);
+
 			const source = audioContext.createBufferSource();
 			source.buffer = decodedBuffer;
 			source.connect(audioContext.destination);
 			source.start();
 		} catch (error) {
-			console.error('Error playing sound:', error);
+			console.error("Error playing sound:", error);
 		}
 	};
 
@@ -157,9 +169,17 @@
 	const createShockwave = (magnitude: number) => {
 		// Reuse shared geometry for better performance
 		if (!sharedShockwaveGeometry) {
-			sharedShockwaveGeometry = new THREE.SphereGeometry(7.02, 64, 32, 0, Math.PI * 2, 0, Math.PI);
+			sharedShockwaveGeometry = new THREE.SphereGeometry(
+				7.02,
+				64,
+				32,
+				0,
+				Math.PI * 2,
+				0,
+				Math.PI,
+			);
 		}
-		
+
 		// Color based on magnitude in turquoise spectrum
 		let color;
 		if (magnitude > 6.2) {
@@ -169,7 +189,7 @@
 		} else {
 			color = new THREE.Color(0x64ffda); // Light turquoise for low magnitude
 		}
-		
+
 		// Create a shader material for the curved shockwave effect
 		const shaderMaterial = new THREE.ShaderMaterial({
 			vertexShader: `
@@ -223,27 +243,32 @@
 			`,
 			uniforms: {
 				time: { value: 0 },
-				maxRadius: { value: magnitude > 6.2 ? 1.8 : magnitude >= 4.1 ? 1.4 : 1.0 },
+				maxRadius: {
+					value: magnitude > 6.2 ? 1.8 : magnitude >= 4.1 ? 1.4 : 1.0,
+				},
 				color: { value: color },
 				epicenter: { value: new THREE.Vector3(0, 0, 0) },
-				globeRadius: { value: 7.0 }
+				globeRadius: { value: 7.0 },
 			},
 			transparent: true,
 			side: THREE.DoubleSide,
 			depthWrite: false,
-			blending: THREE.AdditiveBlending
+			blending: THREE.AdditiveBlending,
 		});
-		
-		const shockwave = new THREE.Mesh(sharedShockwaveGeometry, shaderMaterial);
-		
+
+		const shockwave = new THREE.Mesh(
+			sharedShockwaveGeometry,
+			shaderMaterial,
+		);
+
 		// Store animation properties
 		shockwave.userData = {
 			magnitude,
 			startTime: Date.now(),
-			duration: 2000 + (magnitude * 100), // Shorter duration for quicker fade
-			material: shaderMaterial
+			duration: 2000 + magnitude * 100, // Shorter duration for quicker fade
+			material: shaderMaterial,
 		};
-		
+
 		return shockwave;
 	};
 
@@ -258,18 +283,21 @@
 		const radius = 7.0; // Larger globe radius
 
 		const x = -(radius * Math.sin(phi) * Math.cos(theta));
-		const z = (radius * Math.sin(phi) * Math.sin(theta));
-		const y = (radius * Math.cos(phi));
+		const z = radius * Math.sin(phi) * Math.sin(theta);
+		const y = radius * Math.cos(phi);
 
 		const epicenterPosition = new THREE.Vector3(x, y, z);
 		const shockwave = createShockwave(magnitude);
-		
+
 		// Set the epicenter position in the shader
-		shockwave.userData.material.uniforms.epicenter.value = epicenterPosition.clone().normalize().multiplyScalar(7.0);
-		
+		shockwave.userData.material.uniforms.epicenter.value = epicenterPosition
+			.clone()
+			.normalize()
+			.multiplyScalar(7.0);
+
 		// Position the shockwave at the globe center (the shader will handle the positioning)
 		shockwave.position.set(0, 0, 0);
-		
+
 		scene.add(shockwave);
 		earthquakeDots.push(shockwave);
 		// Create persistent dot at earthquake epicenter
@@ -281,7 +309,7 @@
 	};
 
 	const clearDots = () => {
-		earthquakeDots.forEach(shockwave => {
+		earthquakeDots.forEach((shockwave) => {
 			scene.remove(shockwave);
 			// Only dispose materials, not shared geometry
 			if (Array.isArray(shockwave.material)) {
@@ -294,7 +322,7 @@
 	};
 
 	const clearPersistentDots = () => {
-		persistentDots.forEach(dot => {
+		persistentDots.forEach((dot) => {
 			scene.remove(dot);
 			if (Array.isArray(dot.material)) {
 				dot.material.forEach((mat: any) => mat.dispose());
@@ -308,14 +336,14 @@
 
 	const updateShockwaves = () => {
 		const currentTime = Date.now();
-		
+
 		// Use reverse iteration for safe removal during iteration
 		for (let i = earthquakeDots.length - 1; i >= 0; i--) {
 			const shockwave = earthquakeDots[i];
 			const userData = shockwave.userData;
 			const elapsed = currentTime - userData.startTime;
 			const progress = elapsed / userData.duration;
-			
+
 			if (progress >= 1) {
 				// Remove finished shockwave
 				scene.remove(shockwave);
@@ -333,24 +361,33 @@
 		}
 	};
 
+	let currentYear: number | null = null;
+	let hasPlayed = false;
+
 	const playAnimation = async () => {
 		if (isPlaying) return;
-		
-		isPlaying = true;
-		currentIndex = 0;
-		clearDots();
-		// Keep persistent dots - don't clear them when starting new animation
 
-		// Use pre-sorted data for better performance
+		isPlaying = true;
+		hasPlayed = true;
+		// Do NOT reset currentYear or currentIndex here, so it resumes from where it left off
+		clearDots();
+
 		const playNext = () => {
 			if (!isPlaying || currentIndex >= sortedEarthquakeData.length) {
 				isPlaying = false;
 				return;
 			}
 
-			addEarthquakeShockwave(sortedEarthquakeData[currentIndex]);
-			currentIndex++;
+			const quake = sortedEarthquakeData[currentIndex];
+			addEarthquakeShockwave(quake);
 
+			// Set currentYear from quake.Date
+			if (quake.Date) {
+				const year = new Date(quake.Date).getFullYear();
+				if (!isNaN(year)) currentYear = year;
+			}
+
+			currentIndex++;
 			setTimeout(playNext, animationSpeed);
 		};
 
@@ -359,25 +396,26 @@
 
 	const stopAnimation = () => {
 		isPlaying = false;
+		// Do NOT clear currentYear, so it stays visible and resumes from where it left off
 	};
 
 	// Create grid lines for latitude and longitude
 	function createGridLines() {
 		const gridGroup = new THREE.Group();
-		
+
 		// Create material for grid lines
-		const gridMaterial = new THREE.LineBasicMaterial({ 
-			color: 0xffffff, 
-			opacity: 0.15, 
-			transparent: true 
+		const gridMaterial = new THREE.LineBasicMaterial({
+			color: 0xffffff,
+			opacity: 0.15,
+			transparent: true,
 		});
-		
+
 		// Latitude lines (horizontal circles)
 		for (let lat = -80; lat <= 80; lat += 20) {
 			const phi = (90 - lat) * (Math.PI / 180);
 			const geometry = new THREE.BufferGeometry();
 			const points = [];
-			
+
 			for (let i = 0; i <= 64; i++) {
 				const theta = (i / 64) * Math.PI * 2;
 				const x = Math.sin(phi) * Math.cos(theta) * 7.0;
@@ -385,17 +423,17 @@
 				const z = Math.sin(phi) * Math.sin(theta) * 7.0;
 				points.push(new THREE.Vector3(x, y, z));
 			}
-			
+
 			geometry.setFromPoints(points);
 			const line = new THREE.Line(geometry, gridMaterial);
 			gridGroup.add(line);
 		}
-		
+
 		// Longitude lines (vertical semicircles)
 		for (let lng = -180; lng < 180; lng += 30) {
 			const geometry = new THREE.BufferGeometry();
 			const points = [];
-			
+
 			for (let i = 0; i <= 32; i++) {
 				const phi = (i / 32) * Math.PI;
 				const theta = lng * (Math.PI / 180);
@@ -404,12 +442,12 @@
 				const z = Math.sin(phi) * Math.sin(theta) * 7.0;
 				points.push(new THREE.Vector3(x, y, z));
 			}
-			
+
 			geometry.setFromPoints(points);
 			const line = new THREE.Line(geometry, gridMaterial);
 			gridGroup.add(line);
 		}
-		
+
 		scene.add(gridGroup);
 	}
 
@@ -417,10 +455,10 @@
 	function createPersistentDot(lat: number, lng: number, magnitude: number) {
 		const phi = (90 - lat) * (Math.PI / 180);
 		const theta = (lng + 180) * (Math.PI / 180);
-		
+
 		// Create small dot geometry
 		const dotGeometry = new THREE.SphereGeometry(0.03, 8, 6);
-		
+
 		// Color based on magnitude (same as shockwaves)
 		let color;
 		if (magnitude >= 6.2) {
@@ -430,20 +468,20 @@
 		} else {
 			color = 0x64ffda; // Light turquoise for low magnitude
 		}
-		
-		const dotMaterial = new THREE.MeshBasicMaterial({ 
+
+		const dotMaterial = new THREE.MeshBasicMaterial({
 			color: color,
 			opacity: 0.7,
-			transparent: true
+			transparent: true,
 		});
-		
+
 		const dot = new THREE.Mesh(dotGeometry, dotMaterial);
-		
+
 		// Position on globe surface (slightly above for visibility)
 		const x = -(Math.sin(phi) * Math.cos(theta) * 7.05);
-		const z = (Math.sin(phi) * Math.sin(theta) * 7.05);
-		const y = (Math.cos(phi) * 7.05);
-		
+		const z = Math.sin(phi) * Math.sin(theta) * 7.05;
+		const y = Math.cos(phi) * 7.05;
+
 		dot.position.set(x, y, z);
 		scene.add(dot);
 		persistentDots.push(dot);
@@ -453,14 +491,21 @@
 		const init = async () => {
 			// Initialize Three.js scene
 			scene = new THREE.Scene();
-			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+			camera = new THREE.PerspectiveCamera(
+				75,
+				window.innerWidth / window.innerHeight,
+				0.1,
+				1000,
+			);
 			renderer = new THREE.WebGLRenderer({ antialias: true });
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			renderer.setClearColor(0x000011);
 			container.appendChild(renderer.domElement);
 
 			// Import OrbitControls dynamically
-			const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js');
+			const { OrbitControls } = await import(
+				"three/examples/jsm/controls/OrbitControls.js"
+			);
 			controls = new OrbitControls(camera, renderer.domElement);
 			controls.enableDamping = true;
 			controls.dampingFactor = 0.05;
@@ -470,14 +515,14 @@
 
 			// Create Earth globe with higher resolution
 			const geometry = new THREE.SphereGeometry(7, 128, 128);
-			
+
 			// Create a completely transparent Earth material (invisible globe)
-			const material = new THREE.MeshBasicMaterial({ 
+			const material = new THREE.MeshBasicMaterial({
 				transparent: true,
 				opacity: 0.0,
-				visible: false  // Make globe completely invisible
+				visible: false, // Make globe completely invisible
 			});
-			
+
 			globe = new THREE.Mesh(geometry, material);
 			scene.add(globe);
 
@@ -487,7 +532,7 @@
 			// Add lighting
 			const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
 			scene.add(ambientLight);
-			
+
 			const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 			directionalLight.position.set(1, 1, 1);
 			scene.add(directionalLight);
@@ -497,7 +542,7 @@
 			// Animation loop with frame limiting
 			const animate = (currentTime: number) => {
 				requestAnimationFrame(animate);
-				
+
 				// Frame limiting for better performance
 				if (currentTime - lastFrameTime >= frameInterval) {
 					controls.update();
@@ -507,14 +552,14 @@
 				}
 			};
 			animate(0);
-			
+
 			// Preload earthquake data on startup
 			sortedEarthquakeData = [...earthquakeData].sort((a, b) => {
 				const dateA = new Date(a.Date);
 				const dateB = new Date(b.Date);
 				return dateA.getTime() - dateB.getTime();
 			});
-			
+
 			// Preload audio files asynchronously
 			preloadAudio();
 
@@ -524,14 +569,14 @@
 				camera.updateProjectionMatrix();
 				renderer.setSize(window.innerWidth, window.innerHeight);
 			};
-			
-			window.addEventListener('resize', handleResize);
+
+			window.addEventListener("resize", handleResize);
 		};
 
 		init();
 
 		return () => {
-			window.removeEventListener('resize', () => {
+			window.removeEventListener("resize", () => {
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
 				renderer.setSize(window.innerWidth, window.innerHeight);
@@ -547,39 +592,40 @@
 
 <div class="container">
 	<div bind:this={container} class="visualisation-container"></div>
-	
+
 	<div class="controls">
-		<button 
+		<button
 			bind:this={playButton}
-			class="play-btn" 
+			class="play-btn"
 			class:playing={isPlaying}
 			on:click={isPlaying ? stopAnimation : playAnimation}
 		>
-			{isPlaying ? 'Stop' : 'Play Sonification'}
+			{isPlaying ? "Stop" : "Play Sonification"}
 		</button>
-		
-		<button 
+
+		<button
 			class="clear-btn"
 			on:click={clearPersistentDots}
 			disabled={isPlaying}
 		>
 			Clear Epicenter Dots
 		</button>
-		
+
 		<div class="speed-control">
 			<label for="speed">Animation Speed:</label>
-			<input 
-				type="range" 
-				id="speed" 
-				min="10" 
-				max="500" 
+			<input
+				type="range"
+				id="speed"
+				min="10"
+				max="500"
 				bind:value={animationSpeed}
 				disabled={isPlaying}
-			>
+			/>
 			<span>{animationSpeed}ms</span>
 		</div>
-				<div class="info">
-			<div class="legend">				<h4>Depth → Instrument Mapping:</h4>
+		<div class="info">
+			<div class="legend">
+				<h4>Depth → Instrument Mapping:</h4>
 				<div class="legend-item">
 					<div class="color-dot cyan"></div>
 					<span>>80m: Double Bass</span>
@@ -592,7 +638,7 @@
 					<div class="color-dot light-turquoise"></div>
 					<span>&lt;20m: Theremin</span>
 				</div>
-				
+
 				<h4>Magnitude → Pitch (within instrument):</h4>
 				<div class="legend-item">
 					<span>≥6.5: Lowest pitch (F0/C1/F2)</span>
@@ -606,6 +652,12 @@
 			</div>
 		</div>
 	</div>
+
+	{#if (isPlaying && currentYear) || (!isPlaying && hasPlayed && currentYear)}
+		<div class="year-counter">
+			<span class="year-value">{currentYear}</span>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -631,13 +683,18 @@
 		display: flex;
 		flex-direction: column;
 		gap: 24px;
-		background: linear-gradient(135deg, rgba(10, 10, 10, 0.95), rgba(26, 26, 46, 0.9));
+		background: linear-gradient(
+			135deg,
+			rgba(10, 10, 10, 0.95),
+			rgba(26, 26, 46, 0.9)
+		);
 		padding: 30px;
 		border-radius: 20px;
 		backdrop-filter: blur(15px);
 		border: none;
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 
-		           0 0 20px rgba(100, 255, 218, 0.1);
+		box-shadow:
+			0 20px 40px rgba(0, 0, 0, 0.5),
+			0 0 20px rgba(100, 255, 218, 0.1);
 		min-width: 280px;
 	}
 
@@ -656,18 +713,23 @@
 		letter-spacing: 1.5px;
 		position: relative;
 		overflow: hidden;
-		font-family: 'IBM Plex Sans', sans-serif;
+		font-family: "IBM Plex Sans", sans-serif;
 		animation: gradientShift 3s ease-in-out infinite;
 	}
 
 	.play-btn::before {
-		content: '';
+		content: "";
 		position: absolute;
 		top: 0;
 		left: -100%;
 		width: 100%;
 		height: 100%;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgba(255, 255, 255, 0.2),
+			transparent
+		);
 		transition: left 0.5s;
 	}
 
@@ -699,7 +761,7 @@
 		transition: all 0.3s ease;
 		text-transform: uppercase;
 		letter-spacing: 1px;
-		font-family: 'IBM Plex Sans', sans-serif;
+		font-family: "IBM Plex Sans", sans-serif;
 	}
 
 	.clear-btn:hover:not(:disabled) {
@@ -716,7 +778,8 @@
 	}
 
 	@keyframes gradientShift {
-		0%, 100% {
+		0%,
+		100% {
 			background-position: 0% 50%;
 		}
 		50% {
@@ -740,7 +803,7 @@
 		color: #64ffda;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
-		font-family: 'IBM Plex Sans', sans-serif;
+		font-family: "IBM Plex Sans", sans-serif;
 	}
 
 	.speed-control input[type="range"] {
@@ -762,7 +825,6 @@
 		cursor: pointer;
 		box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
 	}
-	
 
 	.speed-control input[type="range"]::-moz-range-thumb {
 		width: 18px;
@@ -800,7 +862,7 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 1px;
-		font-family: 'IBM Plex Sans', sans-serif;
+		font-family: "IBM Plex Sans", sans-serif;
 		border-bottom: 2px solid rgba(100, 255, 218, 0.3);
 		padding-bottom: 8px;
 	}
@@ -844,6 +906,33 @@
 		box-shadow: 0 0 10px rgba(100, 255, 218, 0.6);
 	}
 
+	.year-counter {
+		position: fixed;
+		right: 40px;
+		bottom: 40px;
+		z-index: 200;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background: rgba(255, 255, 255, 0.03);
+		border-radius: 15px;
+		border: 1.5px solid rgba(100, 255, 218, 0.25);
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+		padding: 18px 38px 14px 38px;
+		min-width: 100px;
+		transition: opacity 0.3s;
+	}
+
+	.year-value {
+		font-size: 2rem;
+		font-weight: 600;
+		color: #64ffda;
+		letter-spacing: 0.08em;
+		font-family: "IBM Plex Sans", sans-serif;
+		line-height: 1;
+	}
+
 	@media (max-width: 768px) {
 		.controls {
 			top: 10px;
@@ -852,13 +941,23 @@
 			max-width: calc(100vw - 40px);
 			min-width: auto;
 		}
-		
+
 		.speed-control input[type="range"] {
 			width: 180px;
 		}
 
 		.info {
 			max-width: 100%;
+		}
+
+		.year-counter {
+			right: 10px;
+			bottom: 10px;
+			padding: 10px 16px 8px 16px;
+			min-width: 60px;
+		}
+		.year-value {
+			font-size: 1.2rem;
 		}
 	}
 </style>
