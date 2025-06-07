@@ -31,34 +31,51 @@
 	// Performance optimization: Frame limiting
 	let lastFrameTime = 0;
 	const targetFPS = 60;
-	const frameInterval = 1000 / targetFPS;
-
-	// Sound mapping based on magnitude and depth
-	const getSoundFile = (magnitude: number, depth: number): string => {
-		let note = '';
-		let octave = '';
-
-		// Determine note based on magnitude
-		if (magnitude > 6.2) {
-			note = 'C';
-		} else if (magnitude >= 4.1) {
-			note = 'E';
+	const frameInterval = 1000 / targetFPS;	// Sound mapping: Depth determines instrument, Magnitude determines pitch within instrument
+	const getSoundFiles = (magnitude: number, depth: number): string[] => {
+		const sounds: string[] = [];
+		
+		// Determine instrument based on depth (adjusted ranges for better distribution)
+		if (depth > 80) {
+			// High depth: Double Bass (deeper earthquakes)
+			if (magnitude >= 6.5) {
+				// High magnitude = lowest pitch
+				sounds.push('/double-bass/F0.wav');
+			} else if (magnitude >= 5.5) {
+				// Medium magnitude = medium pitch  
+				sounds.push('/double-bass/A1.wav');
+			} else {
+				// Low magnitude = highest pitch
+				sounds.push('/double-bass/G2.wav');
+			}
+		} else if (depth > 20) {
+			// Medium depth: Piano (medium earthquakes)
+			if (magnitude >= 6.5) {
+				// High magnitude = lowest pitch
+				sounds.push('/piano/C1.wav');
+			} else if (magnitude >= 5.5) {
+				// Medium magnitude = medium pitch
+				sounds.push('/piano/E2.wav');
+			} else {
+				// Low magnitude = highest pitch
+				sounds.push('/piano/G4.wav');
+			}
 		} else {
-			note = 'G';
+			// Low depth: Theremin (shallow earthquakes)
+			if (magnitude >= 6.5) {
+				// High magnitude = lowest pitch
+				sounds.push('/theremin/F2.wav');
+			} else if (magnitude >= 5.5) {
+				// Medium magnitude = medium pitch
+				sounds.push('/theremin/A3.wav');
+			} else {
+				// Low magnitude = highest pitch
+				sounds.push('/theremin/G4.wav');
+			}
 		}
 
-		// Determine octave based on depth
-		if (depth <= 10) {
-			octave = note === 'G' ? '4' : (note === 'E' ? '4' : '3');
-		} else if (depth <= 100) {
-			octave = '2';
-		} else {
-			octave = '1';
-		}
-
-		return `/piano/${note}${octave}.wav`;
+		return sounds;
 	};
-
 	// Preload all audio files
 	const preloadAudio = async () => {
 		if (isAudioPreloaded) return;
@@ -67,11 +84,17 @@
 			if (!audioContext) {
 				audioContext = new AudioContext();
 			}
-			
-			const audioFiles = [
+					const audioFiles = [
+				// Piano sounds
 				'/piano/C1.wav', '/piano/C2.wav', '/piano/C3.wav',
 				'/piano/E1.wav', '/piano/E2.wav', '/piano/E4.wav', 
-				'/piano/G1.wav', '/piano/G2.wav', '/piano/G4.wav'
+				'/piano/G1.wav', '/piano/G2.wav', '/piano/G4.wav',
+				// Theremin sounds
+				'/theremin/F2.wav', '/theremin/A3.wav', '/theremin/G4.wav',
+				// Choir sounds (commented out)
+				// '/choir/B2.wav', '/choir/F4.wav', '/choir/G5.wav',
+				// Double bass sounds
+				'/double-bass/A1.wav', '/double-bass/F0.wav', '/double-bass/G2.wav'
 			];
 			
 			const loadPromises = audioFiles.map(async (file) => {
@@ -92,7 +115,6 @@
 			console.error('Audio preloading failed:', error);
 		}
 	};
-
 	const playSound = async (soundFile: string) => {
 		try {
 			if (!audioContext) {
@@ -121,6 +143,15 @@
 		} catch (error) {
 			console.error('Error playing sound:', error);
 		}
+	};
+
+	const playSounds = async (soundFiles: string[]) => {
+		// Play multiple sounds simultaneously with slight delays for richness
+		soundFiles.forEach((soundFile, index) => {
+			setTimeout(() => {
+				playSound(soundFile);
+			}, index * 50); // 50ms delay between each instrument
+		});
 	};
 
 	const createShockwave = (magnitude: number) => {
@@ -241,13 +272,12 @@
 		
 		scene.add(shockwave);
 		earthquakeDots.push(shockwave);
-
 		// Create persistent dot at earthquake epicenter
 		createPersistentDot(lat, lon, magnitude);
 
-		// Play sound
-		const soundFile = getSoundFile(magnitude, quake.Depth);
-		playSound(soundFile);
+		// Play sounds (multiple instruments)
+		const soundFiles = getSoundFiles(magnitude, quake.Depth);
+		playSounds(soundFiles);
 	};
 
 	const clearDots = () => {
@@ -548,32 +578,30 @@
 			>
 			<span>{animationSpeed}ms</span>
 		</div>
-		
-		<div class="info">
-			<div class="legend">
-				<h4>Earthquake Magnitude:</h4>
+				<div class="info">
+			<div class="legend">				<h4>Depth → Instrument Mapping:</h4>
 				<div class="legend-item">
 					<div class="color-dot cyan"></div>
-					<span>> 6.2 (C notes)</span>
+					<span>>80m: Double Bass</span>
 				</div>
 				<div class="legend-item">
 					<div class="color-dot turquoise"></div>
-					<span>4.1 - 6.2 (E notes)</span>
+					<span>20-80m: Piano</span>
 				</div>
 				<div class="legend-item">
 					<div class="color-dot light-turquoise"></div>
-					<span>&lt; 4.1 (G notes)</span>
+					<span>&lt;20m: Theremin</span>
 				</div>
 				
-				<h4>Depth Mapping:</h4>
+				<h4>Magnitude → Pitch (within instrument):</h4>
 				<div class="legend-item">
-					<span>0-10m: High octave (3/4)</span>
+					<span>≥6.5: Lowest pitch (F0/C1/F2)</span>
 				</div>
 				<div class="legend-item">
-					<span>10-100m: Medium octave (2)</span>
+					<span>5.5-6.5: Medium pitch (A1/E2/A3)</span>
 				</div>
 				<div class="legend-item">
-					<span>>100m: Low octave (1)</span>
+					<span>&lt;5.5: Highest pitch (G2/G4/G4)</span>
 				</div>
 			</div>
 		</div>
