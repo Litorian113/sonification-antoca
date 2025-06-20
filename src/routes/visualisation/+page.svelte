@@ -39,38 +39,38 @@
 		if (depth > 80) {
 			// High depth: Double Bass (deeper earthquakes) - use more recognizable pitches
 			if (magnitude >= 6.5) {
-				// High magnitude = lowest pitch (but not too low to be inaudible)
-				sounds.push('/double-bass/F0.wav');
+				// High magnitude = highest pitch
+				sounds.push("/oboe/a2l.wav");
 			} else if (magnitude >= 5.5) {
 				// Medium magnitude = medium pitch
-				sounds.push("/double-bass/A1.wav");
+				sounds.push("/oboe/d2l.wav");
 			} else {
-				// Low magnitude = highest pitch
-				sounds.push("/double-bass/G2.wav");
+				// Low magnitude = lowest pitch
+				sounds.push("/oboe/f2l.wav");
 			}
 		} else if (depth > 20) {
 			// Medium depth: Piano (medium earthquakes)
 			if (magnitude >= 6.5) {
-				// High magnitude = lowest pitch
-				sounds.push("/piano/C1.wav");
+				// High magnitude = highest pitch
+				sounds.push("/jazzp/a5.wav");
 			} else if (magnitude >= 5.5) {
 				// Medium magnitude = medium pitch
-				sounds.push("/piano/E2.wav");
+				sounds.push("/jazzp/e4.wav");
 			} else {
-				// Low magnitude = highest pitch
-				sounds.push("/piano/G4.wav");
+				// Low magnitude = lowest pitch
+				sounds.push("/jazzp/g3.wav");
 			}
 		} else {
 			// Low depth: Theremin (shallow earthquakes)
 			if (magnitude >= 6.5) {
-				// High magnitude = lowest pitch
-				sounds.push("/theremin/F2.wav");
+				// High magnitude = highest pitch
+				sounds.push("/violin/a5.wav");
 			} else if (magnitude >= 5.5) {
 				// Medium magnitude = medium pitch
-				sounds.push("/theremin/A3.wav");
+				sounds.push("/violin/e4.wav");
 			} else {
-				// Low magnitude = highest pitch
-				sounds.push("/theremin/G4.wav");
+				// Low magnitude = lowest pitch
+				sounds.push("/violin/g3.wav");
 			}
 		}
 
@@ -95,16 +95,48 @@
 				"/piano/G1.wav",
 				"/piano/G2.wav",
 				"/piano/G4.wav",
+
+				"/grandp/a4.wav",
+				"/grandp/a5.wav",
+				"/grandp/e4.wav",
+				"/grandp/g3.wav",
+
+				"/jazzp/a4.wav",
+				"/jazzp/a5.wav",
+				"/jazzp/e4.wav",
+				"/jazzp/g3.wav",
+
 				// Theremin sounds
 				"/theremin/F2.wav",
 				"/theremin/A3.wav",
 				"/theremin/G4.wav",
 				// Choir sounds (commented out)
-				// '/choir/B2.wav', '/choir/F4.wav', '/choir/G5.wav',
+				"/choir/B2.wav",
+				"/choir/F4.wav",
+				"/choir/G5.wav",
 				// Double bass sounds
 				"/double-bass/A1.wav",
 				"/double-bass/F0.wav",
 				"/double-bass/G2.wav",
+
+				"/oboe/d2.wav",
+				"/oboe/f2.wav",
+				"/oboe/b2.wav",
+				"/oboe/a2.wav",
+				"/oboe/d2l.wav",
+				"/oboe/f2l.wav",
+				"/oboe/a2l.wav",
+
+				"/violin/a5.wav",
+				"/violin/a6.wav",
+				"/violin/c4.wav",
+				"/violin/e4.wav",
+				"/violin/g3.wav",
+				"/violin/g4.wav",
+
+				"/whirly/A3.wav",
+				"/whirly/D3.wav",
+				"/whirly/F3.wav",
 			];
 
 			const loadPromises = audioFiles.map(async (file) => {
