@@ -16,6 +16,12 @@
 	let persistentDots: THREE.Mesh[] = []; // For persistent earthquake points
 	let audioContext: AudioContext;
 	let playButton: HTMLButtonElement;
+	
+	// Globe rotation settings
+	let globeRotationSpeed = 0.001; // Rotation speed for globes
+	let isGlobeRotating = true; // Enable/disable globe rotation
+	let gridGroup: THREE.Group; // Reference to the grid lines
+	
 	//Test Commit
 	// Performance optimization: Pre-load audio buffers
 	const audioBuffers = new Map<string, AudioBuffer>();
@@ -31,50 +37,70 @@
 	// Performance optimization: Frame limiting
 	let lastFrameTime = 0;
 	const targetFPS = 60;
-	const frameInterval = 1000 / targetFPS; // Sound mapping: Depth determines instrument, Magnitude determines pitch within instrument
-	const getSoundFiles = (magnitude: number, depth: number): string[] => {
-		const sounds: string[] = [];
+	const frameInterval = 1000 / targetFPS;
 
-		// Determine instrument based on depth (adjusted ranges for better distribution)
-		if (depth > 80) {
-			// High depth: Double Bass (deeper earthquakes) - use more recognizable pitches
-			if (magnitude >= 6.5) {
-				// High magnitude = highest pitch
-				sounds.push("/oboe/a2l.wav");
-			} else if (magnitude >= 5.5) {
-				// Medium magnitude = medium pitch
-				sounds.push("/oboe/d2l.wav");
-			} else {
-				// Low magnitude = lowest pitch
-				sounds.push("/oboe/f2l.wav");
-			}
-		} else if (depth > 20) {
-			// Medium depth: Piano (medium earthquakes)
-			if (magnitude >= 6.5) {
-				// High magnitude = highest pitch
-				sounds.push("/jazzp/a5.wav");
-			} else if (magnitude >= 5.5) {
-				// Medium magnitude = medium pitch
-				sounds.push("/jazzp/e4.wav");
-			} else {
-				// Low magnitude = lowest pitch
-				sounds.push("/jazzp/g3.wav");
-			}
+	// New Sound mapping: Depth determines instrument, Magnitude determines pitch and volume
+	const getSoundFile = (magnitude: number, depth: number): string => {
+		if (depth > 100) {
+			// Depth > 100: Accordion (RED) - g2 (weakest) to a2 (strongest)
+			if (magnitude >= 7.0) return "/accordion/a2.wav";
+			else if (magnitude >= 6.0) return "/accordion/b2.wav";
+			else if (magnitude >= 5.0) return "/accordion/c2.wav";
+			else if (magnitude >= 4.0) return "/accordion/d2.wav";
+			else if (magnitude >= 3.0) return "/accordion/e2.wav";
+			else if (magnitude >= 2.0) return "/accordion/f2.wav";
+			else return "/accordion/g2.wav";
+		} else if (depth >= 30) {
+			// Depth 30-100: Piano (YELLOW) - C1 (weakest) to G4 (strongest)
+			if (magnitude >= 7.0) return "/piano/G4.wav";
+			else if (magnitude >= 6.0) return "/piano/E4.wav";
+			else if (magnitude >= 5.0) return "/piano/C3.wav";
+			else if (magnitude >= 4.0) return "/piano/G1.wav";
+			else if (magnitude >= 3.0) return "/piano/E1.wav";
+			else return "/piano/C1.wav";
 		} else {
-			// Low depth: Theremin (shallow earthquakes)
-			if (magnitude >= 6.5) {
-				// High magnitude = highest pitch
-				sounds.push("/violin/a5.wav");
-			} else if (magnitude >= 5.5) {
-				// Medium magnitude = medium pitch
-				sounds.push("/violin/e4.wav");
-			} else {
-				// Low magnitude = lowest pitch
-				sounds.push("/violin/g3.wav");
-			}
+			// Depth 0-30: Violin (BLUE) - g3 (weakest) to a6 (strongest)
+			if (magnitude >= 7.0) return "/violin/a6.wav";
+			else if (magnitude >= 6.0) return "/violin/a5.wav";
+			else if (magnitude >= 5.0) return "/violin/g4.wav";
+			else if (magnitude >= 4.0) return "/violin/e4.wav";
+			else if (magnitude >= 3.0) return "/violin/c4.wav";
+			else return "/violin/g3.wav";
 		}
+	};
 
-		return sounds;
+	// Calculate volume based on magnitude (0.1 to 1.0)
+	const getVolumeForMagnitude = (magnitude: number): number => {
+		// Scale magnitude to volume: 1.0-9.0 -> 0.1-1.0
+		return Math.max(0.1, Math.min(1.0, (magnitude - 1.0) / 8.0));
+	};
+
+	// Color mapping based on new depth ranges and instruments
+	const getColorForSound = (magnitude: number, depth: number): THREE.Color => {
+		if (depth > 100) {
+			// Depth > 100: Accordion - RED
+			return new THREE.Color(0xff4444);
+		} else if (depth >= 30) {
+			// Depth 30-100: Piano - YELLOW
+			return new THREE.Color(0xffff44);
+		} else {
+			// Depth 0-30: Violin - BLUE
+			return new THREE.Color(0x4444ff);
+		}
+	};
+
+	// Get globe radius based on earthquake depth for layered visualization
+	const getGlobeRadius = (depth: number): number => {
+		if (depth > 100) {
+			// Deepest layer: Innermost globe
+			return 5.0;
+		} else if (depth >= 30) {
+			// Middle layer: Medium globe
+			return 6.0;
+		} else {
+			// Surface layer: Outer globe
+			return 7.0;
+		}
 	};
 	// Preload all audio files
 	const preloadAudio = async () => {
@@ -85,58 +111,30 @@
 				audioContext = new AudioContext();
 			}
 			const audioFiles = [
+				// Accordion sounds
+				"/accordion/g2.wav",
+				"/accordion/f2.wav", 
+				"/accordion/e2.wav",
+				"/accordion/d2.wav",
+				"/accordion/c2.wav",
+				"/accordion/b2.wav",
+				"/accordion/a2.wav",
+				
 				// Piano sounds
 				"/piano/C1.wav",
-				"/piano/C2.wav",
-				"/piano/C3.wav",
 				"/piano/E1.wav",
-				"/piano/E2.wav",
-				"/piano/E4.wav",
 				"/piano/G1.wav",
-				"/piano/G2.wav",
+				"/piano/C3.wav",
+				"/piano/E4.wav",
 				"/piano/G4.wav",
-
-				"/grandp/a4.wav",
-				"/grandp/a5.wav",
-				"/grandp/e4.wav",
-				"/grandp/g3.wav",
-
-				"/jazzp/a4.wav",
-				"/jazzp/a5.wav",
-				"/jazzp/e4.wav",
-				"/jazzp/g3.wav",
-
-				// Theremin sounds
-				"/theremin/F2.wav",
-				"/theremin/A3.wav",
-				"/theremin/G4.wav",
-				// Choir sounds (commented out)
-				"/choir/B2.wav",
-				"/choir/F4.wav",
-				"/choir/G5.wav",
-				// Double bass sounds
-				"/double-bass/A1.wav",
-				"/double-bass/F0.wav",
-				"/double-bass/G2.wav",
-
-				"/oboe/d2.wav",
-				"/oboe/f2.wav",
-				"/oboe/b2.wav",
-				"/oboe/a2.wav",
-				"/oboe/d2l.wav",
-				"/oboe/f2l.wav",
-				"/oboe/a2l.wav",
-
-				"/violin/a5.wav",
-				"/violin/a6.wav",
+				
+				// Violin sounds
+				"/violin/g3.wav",
 				"/violin/c4.wav",
 				"/violin/e4.wav",
-				"/violin/g3.wav",
 				"/violin/g4.wav",
-
-				"/whirly/A3.wav",
-				"/whirly/D3.wav",
-				"/whirly/F3.wav",
+				"/violin/a5.wav",
+				"/violin/a6.wav"
 			];
 
 			const loadPromises = audioFiles.map(async (file) => {
@@ -158,18 +156,25 @@
 			console.error("Audio preloading failed:", error);
 		}
 	};
-	const playSound = async (soundFile: string) => {
+	const playSound = async (soundFile: string, magnitude: number) => {
 		try {
 			if (!audioContext) {
 				audioContext = new AudioContext();
 			}
 
+			const volume = getVolumeForMagnitude(magnitude);
+			
 			// Use preloaded buffer if available
 			const audioBuffer = audioBuffers.get(soundFile);
 			if (audioBuffer) {
 				const source = audioContext.createBufferSource();
+				const gainNode = audioContext.createGain();
+				
 				source.buffer = audioBuffer;
-				source.connect(audioContext.destination);
+				gainNode.gain.value = volume;
+				
+				source.connect(gainNode);
+				gainNode.connect(audioContext.destination);
 				source.start();
 				return;
 			}
@@ -177,49 +182,39 @@
 			// Fallback to dynamic loading
 			const response = await fetch(soundFile);
 			const arrayBuffer = await response.arrayBuffer();
-			const decodedBuffer =
-				await audioContext.decodeAudioData(arrayBuffer);
+			const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
 			const source = audioContext.createBufferSource();
+			const gainNode = audioContext.createGain();
+			
 			source.buffer = decodedBuffer;
-			source.connect(audioContext.destination);
+			gainNode.gain.value = volume;
+			
+			source.connect(gainNode);
+			gainNode.connect(audioContext.destination);
 			source.start();
 		} catch (error) {
 			console.error("Error playing sound:", error);
 		}
 	};
-	const playSounds = async (soundFiles: string[]) => {
-		// Play sounds one at a time to avoid overlapping interference
-		// For earthquake sonification, we want clear, distinct sounds rather than layered ones
-		if (soundFiles.length > 0) {
-			// Just play the first (main) sound to avoid audio glitching
-			playSound(soundFiles[0]);
-		}
-	};
 
-	const createShockwave = (magnitude: number) => {
-		// Reuse shared geometry for better performance
-		if (!sharedShockwaveGeometry) {
-			sharedShockwaveGeometry = new THREE.SphereGeometry(
-				7.02,
-				64,
-				32,
-				0,
-				Math.PI * 2,
-				0,
-				Math.PI,
-			);
-		}
+	const createShockwave = (magnitude: number, depth: number) => {
+		// Get the appropriate globe radius for this depth
+		const globeRadius = getGlobeRadius(depth);
+		
+		// Create geometry sized for the specific depth layer
+		const shockwaveGeometry = new THREE.SphereGeometry(
+			globeRadius + 0.02,
+			64,
+			32,
+			0,
+			Math.PI * 2,
+			0,
+			Math.PI,
+		);
 
-		// Color based on magnitude in turquoise spectrum
-		let color;
-		if (magnitude > 6.2) {
-			color = new THREE.Color(0x00ffff); // Bright cyan for high magnitude
-		} else if (magnitude >= 4.1) {
-			color = new THREE.Color(0x40e0d0); // Turquoise for medium magnitude
-		} else {
-			color = new THREE.Color(0x64ffda); // Light turquoise for low magnitude
-		}
+		// Color based on depth and instrument mapping (same as dots)
+		const color = getColorForSound(magnitude, depth);
 
 		// Create a shader material for the curved shockwave effect
 		const shaderMaterial = new THREE.ShaderMaterial({
@@ -279,7 +274,7 @@
 				},
 				color: { value: color },
 				epicenter: { value: new THREE.Vector3(0, 0, 0) },
-				globeRadius: { value: 7.0 },
+				globeRadius: { value: globeRadius },
 			},
 			transparent: true,
 			side: THREE.DoubleSide,
@@ -288,7 +283,7 @@
 		});
 
 		const shockwave = new THREE.Mesh(
-			sharedShockwaveGeometry,
+			shockwaveGeometry,
 			shaderMaterial,
 		);
 
@@ -311,20 +306,22 @@
 		// Convert lat/lon to 3D coordinates on sphere surface
 		const phi = (90 - lat) * (Math.PI / 180);
 		const theta = (lon + 180) * (Math.PI / 180);
-		const radius = 7.0; // Larger globe radius
+		
+		// Get the appropriate globe radius for this depth
+		const globeRadius = getGlobeRadius(quake.Depth);
 
-		const x = -(radius * Math.sin(phi) * Math.cos(theta));
-		const z = radius * Math.sin(phi) * Math.sin(theta);
-		const y = radius * Math.cos(phi);
+		const x = -(globeRadius * Math.sin(phi) * Math.cos(theta));
+		const z = globeRadius * Math.sin(phi) * Math.sin(theta);
+		const y = globeRadius * Math.cos(phi);
 
 		const epicenterPosition = new THREE.Vector3(x, y, z);
-		const shockwave = createShockwave(magnitude);
+		const shockwave = createShockwave(magnitude, quake.Depth);
 
-		// Set the epicenter position in the shader
+		// Set the epicenter position in the shader (normalized for the specific globe size)
 		shockwave.userData.material.uniforms.epicenter.value = epicenterPosition
 			.clone()
 			.normalize()
-			.multiplyScalar(7.0);
+			.multiplyScalar(globeRadius);
 
 		// Position the shockwave at the globe center (the shader will handle the positioning)
 		shockwave.position.set(0, 0, 0);
@@ -332,11 +329,11 @@
 		scene.add(shockwave);
 		earthquakeDots.push(shockwave);
 		// Create persistent dot at earthquake epicenter
-		createPersistentDot(lat, lon, magnitude);
+		createPersistentDot(lat, lon, magnitude, quake.Depth);
 
-		// Play sounds (multiple instruments)
-		const soundFiles = getSoundFiles(magnitude, quake.Depth);
-		playSounds(soundFiles);
+		// Play sound with volume based on magnitude
+		const soundFile = getSoundFile(magnitude, quake.Depth);
+		playSound(soundFile, magnitude);
 	};
 
 	const clearDots = () => {
@@ -480,25 +477,19 @@
 		}
 
 		scene.add(gridGroup);
+		return gridGroup; // Return reference for rotation
 	}
 
 	// Create persistent dots for earthquake epicenters
-	function createPersistentDot(lat: number, lng: number, magnitude: number) {
+	function createPersistentDot(lat: number, lng: number, magnitude: number, depth: number) {
 		const phi = (90 - lat) * (Math.PI / 180);
 		const theta = (lng + 180) * (Math.PI / 180);
 
 		// Create small dot geometry
 		const dotGeometry = new THREE.SphereGeometry(0.03, 8, 6);
 
-		// Color based on magnitude (same as shockwaves)
-		let color;
-		if (magnitude >= 6.2) {
-			color = 0x00ffff; // Cyan for high magnitude
-		} else if (magnitude >= 4.1) {
-			color = 0x40e0d0; // Turquoise for medium magnitude
-		} else {
-			color = 0x64ffda; // Light turquoise for low magnitude
-		}
+		// Color based on depth and instrument mapping
+		const color = getColorForSound(magnitude, depth);
 
 		const dotMaterial = new THREE.MeshBasicMaterial({
 			color: color,
@@ -508,10 +499,12 @@
 
 		const dot = new THREE.Mesh(dotGeometry, dotMaterial);
 
-		// Position on globe surface (slightly above for visibility)
-		const x = -(Math.sin(phi) * Math.cos(theta) * 7.05);
-		const z = Math.sin(phi) * Math.sin(theta) * 7.05;
-		const y = Math.cos(phi) * 7.05;
+		// Position on outer globe surface (always at 7.05 regardless of depth)
+		// This ensures all dots are visible on the surface while shockwaves occur at depth
+		const outerRadius = 7.05;
+		const x = -(Math.sin(phi) * Math.cos(theta) * outerRadius);
+		const z = Math.sin(phi) * Math.sin(theta) * outerRadius;
+		const y = Math.cos(phi) * outerRadius;
 
 		dot.position.set(x, y, z);
 		scene.add(dot);
@@ -558,7 +551,7 @@
 			scene.add(globe);
 
 			// Add subtle white latitude/longitude grid lines
-			createGridLines();
+			gridGroup = createGridLines();
 
 			// Add lighting
 			const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
@@ -576,6 +569,24 @@
 
 				// Frame limiting for better performance
 				if (currentTime - lastFrameTime >= frameInterval) {
+					// Globe rotation: rotate all globe elements
+					if (isGlobeRotating) {
+						// Rotate grid lines
+						if (gridGroup) {
+							gridGroup.rotation.y += globeRotationSpeed;
+						}
+						
+						// Rotate all persistent dots
+						persistentDots.forEach(dot => {
+							dot.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), globeRotationSpeed);
+						});
+						
+						// Rotate all shockwaves
+						earthquakeDots.forEach(shockwave => {
+							shockwave.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), globeRotationSpeed);
+						});
+					}
+					
 					controls.update();
 					updateShockwaves(); // Update shockwave animations
 					renderer.render(scene, camera);
@@ -584,12 +595,22 @@
 			};
 			animate(0);
 
-			// Preload earthquake data on startup
-			sortedEarthquakeData = [...earthquakeData].sort((a, b) => {
-				const dateA = new Date(a.Date);
-				const dateB = new Date(b.Date);
-				return dateA.getTime() - dateB.getTime();
-			});
+			// Preload earthquake data on startup with date filtering (2010-2016)
+			const startDate = new Date('2010-01-01');
+			const endDate = new Date('2016-12-30');
+			
+			sortedEarthquakeData = [...earthquakeData]
+				.filter(quake => {
+					const quakeDate = new Date(quake.Date);
+					return quakeDate >= startDate && quakeDate <= endDate;
+				})
+				.sort((a, b) => {
+					const dateA = new Date(a.Date);
+					const dateB = new Date(b.Date);
+					return dateA.getTime() - dateB.getTime();
+				});
+			
+			console.log(`Loaded ${sortedEarthquakeData.length} earthquakes from 2010-2016`);
 
 			// Preload audio files asynchronously
 			preloadAudio();
@@ -635,6 +656,13 @@
 		</button>
 
 		<button
+			class="rotation-btn"
+			on:click={() => isGlobeRotating = !isGlobeRotating}
+		>
+			{isGlobeRotating ? "Stop Globe Rotation" : "Start Globe Rotation"}
+		</button>
+
+		<button
 			class="clear-btn"
 			on:click={clearPersistentDots}
 			disabled={isPlaying}
@@ -656,29 +684,39 @@
 		</div>
 		<div class="info">
 			<div class="legend">
-				<h4>Depth → Instrument Mapping:</h4>
+				<h4>3D Depth Visualization:</h4>
 				<div class="legend-item">
-					<div class="color-dot cyan"></div>
-					<span>>80m: Double Bass</span>
+					<div class="color-dot red"></div>
+					<span>>100m: Inner Globe (Red) - Accordion</span>
 				</div>
 				<div class="legend-item">
-					<div class="color-dot turquoise"></div>
-					<span>20-80m: Piano</span>
+					<div class="color-dot yellow"></div>
+					<span>30-100m: Middle Globe (Yellow) - Piano</span>
 				</div>
 				<div class="legend-item">
-					<div class="color-dot light-turquoise"></div>
-					<span>&lt;20m: Theremin</span>
+					<div class="color-dot blue"></div>
+					<span>0-30m: Outer Globe (Blue) - Violin</span>
 				</div>
 
-				<h4>Magnitude → Pitch (within instrument):</h4>
+				<h4>Visual Elements:</h4>
 				<div class="legend-item">
-					<span>≥6.5: Lowest pitch (F0/C1/F2)</span>
+					<span>• Dots: All shown on surface</span>
 				</div>
 				<div class="legend-item">
-					<span>5.5-6.5: Medium pitch (A1/E2/A3)</span>
+					<span>• Rings: Spread at actual depth layer</span>
+				</div>
+
+				<h4>Magnitude → Pitch & Volume:</h4>
+				<div class="legend-item">
+					<span>Higher magnitude = Higher pitch + Louder</span>
 				</div>
 				<div class="legend-item">
-					<span>&lt;5.5: Highest pitch (G2/G4/G4)</span>
+					<span>Lower magnitude = Lower pitch + Quieter</span>
+				</div>
+				
+				<h4>Data Range:</h4>
+				<div class="legend-item">
+					<span>2010 - 2016 Earthquakes</span>
 				</div>
 			</div>
 		</div>
@@ -777,6 +815,28 @@
 		background: linear-gradient(135deg, #ff6b6b, #ff8e53, #ffa726);
 		background-size: 200% 200%;
 		animation: gradientShift 2s ease-in-out infinite;
+	}
+
+	.rotation-btn {
+		padding: 12px 24px;
+		font-size: 14px;
+		background: linear-gradient(135deg, #4CAF50, #45a049, #66bb6a);
+		background-size: 200% 200%;
+		color: white;
+		border: none;
+		border-radius: 25px;
+		cursor: pointer;
+		font-weight: 600;
+		transition: all 0.3s ease;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		font-family: "IBM Plex Sans", sans-serif;
+	}
+
+	.rotation-btn:hover {
+		background: linear-gradient(135deg, #45a049, #4CAF50);
+		transform: translateY(-2px);
+		box-shadow: 0 10px 25px rgba(76, 175, 80, 0.3);
 	}
 
 	.clear-btn {
@@ -922,19 +982,19 @@
 		border: 2px solid rgba(255, 255, 255, 0.2);
 	}
 
-	.color-dot.cyan {
-		background: linear-gradient(45deg, #00ffff, #40ffff);
-		box-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+	.color-dot.red {
+		background: linear-gradient(45deg, #ff4444, #ff6666);
+		box-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
 	}
 
-	.color-dot.turquoise {
-		background: linear-gradient(45deg, #40e0d0, #64ffda);
-		box-shadow: 0 0 10px rgba(64, 224, 208, 0.6);
+	.color-dot.yellow {
+		background: linear-gradient(45deg, #ffff44, #ffff66);
+		box-shadow: 0 0 10px rgba(255, 255, 68, 0.6);
 	}
 
-	.color-dot.light-turquoise {
-		background: linear-gradient(45deg, #64ffda, #a0ffff);
-		box-shadow: 0 0 10px rgba(100, 255, 218, 0.6);
+	.color-dot.blue {
+		background: linear-gradient(45deg, #4444ff, #6666ff);
+		box-shadow: 0 0 10px rgba(68, 68, 255, 0.6);
 	}
 
 	.year-counter {
