@@ -18,9 +18,10 @@
 	let playButton: HTMLButtonElement;
 	
 	// Globe rotation settings
-	let globeRotationSpeed = 0.001; // Rotation speed for globes
+	let globeRotationSpeed = 0.01; // Rotation speed for globes
 	let isGlobeRotating = true; // Enable/disable globe rotation
 	let gridGroup: THREE.Group; // Reference to the grid lines
+	let persistentDotsGroup: THREE.Group; // Reference to persistent dots group
 	
 	//Test Commit
 	// Performance optimization: Pre-load audio buffers
@@ -70,13 +71,30 @@
 	};
 
 	// Calculate volume based on magnitude (0.1 to 1.0)
-	const getVolumeForMagnitude = (magnitude: number): number => {
-		// Scale magnitude to volume: 1.0-9.0 -> 0.1-1.0
-		return Math.max(0.1, Math.min(1.0, (magnitude - 1.0) / 8.0));
+	const getVolumeForMagnitude = (magnitude: number, depth: number): number => {
+		// Base volume scaling: 1.0-9.0 -> 0.1-1.0
+		let volume = Math.max(0.1, Math.min(1.0, (magnitude - 1.0) / 8.0));
+		
+		// Reduce accordion volume (depth > 100) as they are more dominant
+		if (depth > 100) {
+			volume *= 0.6; // Reduce accordion volume by 40%
+		}
+		
+		return volume;
+	};
+
+	// Get percussion sound for magnitude 8+ events
+	const getPercussionSound = (): string => {
+		return "/percussion/b5.wav";
 	};
 
 	// Color mapping based on new depth ranges and instruments
 	const getColorForSound = (magnitude: number, depth: number): THREE.Color => {
+		// Special color for magnitude 8+ events (catastrophic earthquakes)
+		if (magnitude >= 8.0) {
+			return new THREE.Color(0x00ff44); // Bright green for catastrophic events
+		}
+		
 		if (depth > 100) {
 			// Depth > 100: Accordion - RED
 			return new THREE.Color(0xff4444);
@@ -134,7 +152,10 @@
 				"/violin/e4.wav",
 				"/violin/g4.wav",
 				"/violin/a5.wav",
-				"/violin/a6.wav"
+				"/violin/a6.wav",
+				
+				// Percussion sounds for magnitude 8+ events
+				"/percussion/b5.wav"
 			];
 
 			const loadPromises = audioFiles.map(async (file) => {
@@ -156,13 +177,13 @@
 			console.error("Audio preloading failed:", error);
 		}
 	};
-	const playSound = async (soundFile: string, magnitude: number) => {
+	const playSound = async (soundFile: string, magnitude: number, depth: number) => {
 		try {
 			if (!audioContext) {
 				audioContext = new AudioContext();
 			}
 
-			const volume = getVolumeForMagnitude(magnitude);
+			const volume = getVolumeForMagnitude(magnitude, depth);
 			
 			// Use preloaded buffer if available
 			const audioBuffer = audioBuffers.get(soundFile);
@@ -198,9 +219,92 @@
 		}
 	};
 
+	// Play percussion sound for catastrophic earthquakes (magnitude 8+)
+	const playPercussionSound = async (magnitude: number) => {
+		try {
+			if (!audioContext) {
+				audioContext = new AudioContext();
+			}
+
+			const percussionFile = getPercussionSound();
+			// Use higher volume for catastrophic events (0.8-1.0)
+			const volume = Math.max(0.8, Math.min(1.0, (magnitude - 7.0) / 2.0));
+			
+			// Use preloaded buffer if available
+			const audioBuffer = audioBuffers.get(percussionFile);
+			if (audioBuffer) {
+				const source = audioContext.createBufferSource();
+				const gainNode = audioContext.createGain();
+				
+				source.buffer = audioBuffer;
+				gainNode.gain.value = volume;
+				
+				source.connect(gainNode);
+				gainNode.connect(audioContext.destination);
+				source.start();
+				return;
+			}
+
+			// Fallback to dynamic loading
+			const response = await fetch(percussionFile);
+			const arrayBuffer = await response.arrayBuffer();
+			const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+			const source = audioContext.createBufferSource();
+			const gainNode = audioContext.createGain();
+			
+			source.buffer = decodedBuffer;
+			gainNode.gain.value = volume;
+			
+			source.connect(gainNode);
+			gainNode.connect(audioContext.destination);
+			source.start();
+		} catch (error) {
+			console.error("Error playing percussion sound:", error);
+		}
+	};
+
 	const createShockwave = (magnitude: number, depth: number) => {
 		// Get the appropriate globe radius for this depth
 		const globeRadius = getGlobeRadius(depth);
+		
+		// Calculate magnitude-based parameters for realistic earthquake scaling
+		// Earthquake magnitude scale is logarithmic, so we need to scale accordingly
+		const getMaxRadiusForMagnitude = (mag: number): number => {
+			// Scale based on realistic earthquake impact zones
+			// Magnitude 1-2: Very local (0.3-0.5)
+			// Magnitude 3-4: Local (0.6-1.0) 
+			// Magnitude 5-6: Regional (1.2-1.8)
+			// Magnitude 7+: Major/Great (2.0-3.0)
+			if (mag >= 8.0) return 3.0;        // Great earthquake
+			else if (mag >= 7.0) return 2.4;   // Major earthquake 
+			else if (mag >= 6.0) return 1.8;   // Strong earthquake
+			else if (mag >= 5.0) return 1.2;   // Moderate earthquake
+			else if (mag >= 4.0) return 0.8;   // Light earthquake
+			else if (mag >= 3.0) return 0.6;   // Minor earthquake
+			else if (mag >= 2.0) return 0.4;   // Micro earthquake
+			else return 0.3;                   // Very minor earthquake
+		};
+		
+		const getRingWidthForMagnitude = (mag: number): number => {
+			// Stronger earthquakes have wider shock fronts
+			// Scale from 0.02 (very thin) to 0.08 (thick)
+			const baseWidth = 0.02;
+			const widthMultiplier = Math.pow(2, (mag - 2.0) / 2.0); // Exponential scaling
+			return Math.min(0.08, baseWidth * widthMultiplier);
+		};
+		
+		const getDurationForMagnitude = (mag: number): number => {
+			// Stronger earthquakes have longer-lasting effects
+			// Scale from 1500ms (weak) to 4000ms (very strong)
+			const baseDuration = 1500;
+			const durationMultiplier = Math.pow(1.5, mag - 2.0);
+			return Math.min(4000, baseDuration * durationMultiplier);
+		};
+		
+		const maxRadius = getMaxRadiusForMagnitude(magnitude);
+		const ringWidth = getRingWidthForMagnitude(magnitude);
+		const duration = getDurationForMagnitude(magnitude);
 		
 		// Create geometry sized for the specific depth layer
 		const shockwaveGeometry = new THREE.SphereGeometry(
@@ -234,6 +338,7 @@
 			fragmentShader: `
 				uniform float time;
 				uniform float maxRadius;
+				uniform float ringWidth;
 				uniform vec3 color;
 				uniform vec3 epicenter;
 				uniform float globeRadius;
@@ -248,14 +353,14 @@
 					
 					// Create expanding ring effect
 					float ringRadius = time * maxRadius;
-					float ringWidth = maxRadius * 0.04; // Much thinner rings
 					
 					float ringDistance = abs(sphericalDistance - ringRadius);
 					float alpha = 1.0 - (ringDistance / ringWidth);
 					alpha = clamp(alpha, 0.0, 1.0);
 					
-					// Faster fade out for subtler effect
-					alpha *= (1.0 - time * 0.9);
+					// Slower fade out for stronger earthquakes, faster for weaker ones
+					float fadeRate = 0.7 + (maxRadius / 6.0); // Stronger earthquakes fade slower
+					alpha *= (1.0 - time * fadeRate);
 					
 					// Better hemisphere clipping to avoid edge artifacts
 					float facing = dot(normalize(vPosition), normalize(epicenter));
@@ -269,9 +374,8 @@
 			`,
 			uniforms: {
 				time: { value: 0 },
-				maxRadius: {
-					value: magnitude > 6.2 ? 1.8 : magnitude >= 4.1 ? 1.4 : 1.0,
-				},
+				maxRadius: { value: maxRadius },
+				ringWidth: { value: ringWidth },
 				color: { value: color },
 				epicenter: { value: new THREE.Vector3(0, 0, 0) },
 				globeRadius: { value: globeRadius },
@@ -291,7 +395,123 @@
 		shockwave.userData = {
 			magnitude,
 			startTime: Date.now(),
-			duration: 2000 + magnitude * 100, // Shorter duration for quicker fade
+			duration: duration, // Use magnitude-based duration
+			material: shaderMaterial,
+		};
+
+		return shockwave;
+	};
+
+	// Create special green shockwave for catastrophic earthquakes (magnitude 8+)
+	const createCatastrophicShockwave = (magnitude: number, lat: number, lon: number) => {
+		// Always use outer globe for maximum visual impact
+		const globeRadius = 7.0;
+		
+		// Create geometry for outer globe
+		const shockwaveGeometry = new THREE.SphereGeometry(
+			globeRadius + 0.05, // Slightly larger for prominence
+			64,
+			32,
+			0,
+			Math.PI * 2,
+			0,
+			Math.PI,
+		);
+
+		// Bright green color for catastrophic events
+		const greenColor = new THREE.Color(0x00ff44);
+		
+		// Impact radius for catastrophic events - smaller than before
+		const maxRadius = 2.2; // Reasonable size for magnitude 8+ events
+		const ringWidth = 0.08; // Slightly thinner ring
+		const duration = 4000; // Shorter duration (4 seconds)
+
+		// Create shader material for green catastrophic shockwave
+		const shaderMaterial = new THREE.ShaderMaterial({
+			vertexShader: `
+				varying vec3 vPosition;
+				varying vec3 vNormal;
+				varying float vDistance;
+				uniform vec3 epicenter;
+				
+				void main() {
+					vPosition = position;
+					vNormal = normal;
+					vDistance = distance(position, epicenter);
+					gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+				}
+			`,
+			fragmentShader: `
+				uniform float time;
+				uniform float maxRadius;
+				uniform float ringWidth;
+				uniform vec3 color;
+				uniform vec3 epicenter;
+				uniform float globeRadius;
+				varying vec3 vPosition;
+				varying vec3 vNormal;
+				varying float vDistance;
+				
+				void main() {
+					// Calculate distance from epicenter on the sphere surface
+					float angularDistance = acos(dot(normalize(vPosition), normalize(epicenter)));
+					float sphericalDistance = globeRadius * angularDistance;
+					
+					// Create expanding ring effect
+					float ringRadius = time * maxRadius;
+					
+					float ringDistance = abs(sphericalDistance - ringRadius);
+					float alpha = 1.0 - (ringDistance / ringWidth);
+					alpha = clamp(alpha, 0.0, 1.0);
+					
+					// Very slow fade for catastrophic events
+					alpha *= (1.0 - time * 0.4);
+					
+					// Enhanced visibility with brighter glow
+					alpha *= 1.5;
+					alpha = clamp(alpha, 0.0, 1.0);
+					
+					// Better hemisphere clipping
+					float facing = dot(normalize(vPosition), normalize(epicenter));
+					alpha *= smoothstep(0.1, 0.7, facing);
+					
+					if (facing < 0.05) alpha = 0.0;
+					
+					gl_FragColor = vec4(color, alpha);
+				}
+			`,
+			uniforms: {
+				time: { value: 0 },
+				maxRadius: { value: maxRadius },
+				ringWidth: { value: ringWidth },
+				color: { value: greenColor },
+				epicenter: { value: new THREE.Vector3(0, 0, 0) },
+				globeRadius: { value: globeRadius },
+			},
+			transparent: true,
+			side: THREE.DoubleSide,
+			depthWrite: false,
+			blending: THREE.AdditiveBlending,
+		});
+
+		const shockwave = new THREE.Mesh(shockwaveGeometry, shaderMaterial);
+		
+		// Convert lat/lon to epicenter position
+		const phi = (90 - lat) * (Math.PI / 180);
+		const theta = (lon + 180) * (Math.PI / 180);
+		const x = -(globeRadius * Math.sin(phi) * Math.cos(theta));
+		const z = globeRadius * Math.sin(phi) * Math.sin(theta);
+		const y = globeRadius * Math.cos(phi);
+		const epicenterPosition = new THREE.Vector3(x, y, z);
+		
+		// Set epicenter position in shader
+		shaderMaterial.uniforms.epicenter.value = epicenterPosition.clone().normalize().multiplyScalar(globeRadius);
+
+		// Store animation properties
+		shockwave.userData = {
+			magnitude,
+			startTime: Date.now(),
+			duration: duration,
 			material: shaderMaterial,
 		};
 
@@ -333,7 +553,19 @@
 
 		// Play sound with volume based on magnitude
 		const soundFile = getSoundFile(magnitude, quake.Depth);
-		playSound(soundFile, magnitude);
+		playSound(soundFile, magnitude, quake.Depth);
+
+		// For catastrophic earthquakes (magnitude 8+), add additional effects
+		if (magnitude >= 8.0) {
+			// Play percussion sound
+			playPercussionSound(magnitude);
+			
+			// Create additional green shockwave on outer globe for visual impact
+			const greenShockwave = createCatastrophicShockwave(magnitude, lat, lon);
+			greenShockwave.position.set(0, 0, 0);
+			scene.add(greenShockwave);
+			earthquakeDots.push(greenShockwave);
+		}
 	};
 
 	const clearDots = () => {
@@ -351,7 +583,7 @@
 
 	const clearPersistentDots = () => {
 		persistentDots.forEach((dot) => {
-			scene.remove(dot);
+			persistentDotsGroup.remove(dot);
 			if (Array.isArray(dot.material)) {
 				dot.material.forEach((mat: any) => mat.dispose());
 			} else {
@@ -507,7 +739,7 @@
 		const y = Math.cos(phi) * outerRadius;
 
 		dot.position.set(x, y, z);
-		scene.add(dot);
+		persistentDotsGroup.add(dot);
 		persistentDots.push(dot);
 	}
 
@@ -553,6 +785,10 @@
 			// Add subtle white latitude/longitude grid lines
 			gridGroup = createGridLines();
 
+			// Create group for persistent dots
+			persistentDotsGroup = new THREE.Group();
+			scene.add(persistentDotsGroup);
+
 			// Add lighting
 			const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
 			scene.add(ambientLight);
@@ -576,10 +812,10 @@
 							gridGroup.rotation.y += globeRotationSpeed;
 						}
 						
-						// Rotate all persistent dots
-						persistentDots.forEach(dot => {
-							dot.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), globeRotationSpeed);
-						});
+						// Rotate persistent dots group
+						if (persistentDotsGroup) {
+							persistentDotsGroup.rotation.y += globeRotationSpeed;
+						}
 						
 						// Rotate all shockwaves
 						earthquakeDots.forEach(shockwave => {
