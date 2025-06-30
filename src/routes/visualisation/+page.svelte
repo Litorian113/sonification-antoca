@@ -2,6 +2,7 @@
 	import { onMount } from "svelte";
 	import * as THREE from "three";
 	import earthquakeData from "../../data/earthquakeDATA.json";
+	import ControlPanel from "../../lib/ControlPanel.svelte";
 
 	let container: HTMLElement;
 	let isPlaying = false;
@@ -103,25 +104,37 @@
 		return "/percussion/b5.wav";
 	};
 
-	// Color mapping based on new depth ranges and instruments
+	// Color mapping based on new depth ranges and instruments with magnitude-based gradients
 	const getColorForSound = (
 		magnitude: number,
 		depth: number,
 	): THREE.Color => {
 		// Special color for magnitude 8+ events (catastrophic earthquakes)
 		if (magnitude >= 8.0) {
-			return new THREE.Color(0x00ff44); // Bright green for catastrophic events
+			return new THREE.Color(0xFFF4D2); // Light cream for catastrophic events
 		}
 
+		// Map magnitude 5.5-7.5 to color intensity (0.0 = weak, 1.0 = strong)
+		const minMagnitude = 5.5;
+		const maxMagnitude = 7.5;
+		const clampedMagnitude = Math.max(minMagnitude, Math.min(maxMagnitude, magnitude));
+		const intensity = (clampedMagnitude - minMagnitude) / (maxMagnitude - minMagnitude);
+
 		if (depth > 100) {
-			// Depth > 100: Accordion - RED
-			return new THREE.Color(0xff4444);
+			// Depth > 100: Accordion - Gradient from strong #F8AE31 to weak #E7A22E
+			const strongColor = new THREE.Color(0xF8AE31);
+			const weakColor = new THREE.Color(0xE7A22E);
+			return strongColor.clone().lerp(weakColor, 1.0 - intensity);
 		} else if (depth >= 30) {
-			// Depth 30-100: Piano - YELLOW
-			return new THREE.Color(0xffff44);
+			// Depth 30-100: Piano - Gradient from strong #FF4F14 to weak #C43B29
+			const strongColor = new THREE.Color(0xFF4F14);
+			const weakColor = new THREE.Color(0xC43B29);
+			return strongColor.clone().lerp(weakColor, 1.0 - intensity);
 		} else {
-			// Depth 0-30: Violin - BLUE
-			return new THREE.Color(0x4444ff);
+			// Depth 0-30: Violin - Gradient from strong #3398F1 to weak #1164B6
+			const strongColor = new THREE.Color(0x3398F1);
+			const weakColor = new THREE.Color(0x1164B6);
+			return strongColor.clone().lerp(weakColor, 1.0 - intensity);
 		}
 	};
 
@@ -464,15 +477,15 @@
 			Math.PI,
 		);
 
-		// Bright green color for catastrophic events
-		const greenColor = new THREE.Color(0x00ff44);
+		// Light cream color for catastrophic events
+		const catastrophicColor = new THREE.Color(0xFFF4D2);
 
 		// Impact radius for catastrophic events - smaller than before
 		const maxRadius = 2.2; // Reasonable size for magnitude 8+ events
 		const ringWidth = 0.08; // Slightly thinner ring
 		const duration = 4000; // Shorter duration (4 seconds)
 
-		// Create shader material for green catastrophic shockwave
+		// Create shader material for catastrophic shockwave
 		const shaderMaterial = new THREE.ShaderMaterial({
 			vertexShader: `
 				varying vec3 vPosition;
@@ -530,7 +543,7 @@
 				time: { value: 0 },
 				maxRadius: { value: maxRadius },
 				ringWidth: { value: ringWidth },
-				color: { value: greenColor },
+				color: { value: catastrophicColor },
 				epicenter: { value: new THREE.Vector3(0, 0, 0) },
 				globeRadius: { value: globeRadius },
 			},
@@ -620,15 +633,15 @@
 			// Play percussion sound
 			playPercussionSound(magnitude);
 
-			// Create additional green shockwave on outer globe for visual impact
-			const greenShockwave = createCatastrophicShockwave(
+			// Create additional cream-colored shockwave on outer globe for visual impact
+			const catastrophicShockwave = createCatastrophicShockwave(
 				magnitude,
 				lat,
 				lon,
 			);
-			greenShockwave.position.set(0, 0, 0);
-			scene.add(greenShockwave);
-			earthquakeDots.push(greenShockwave);
+			catastrophicShockwave.position.set(0, 0, 0);
+			scene.add(catastrophicShockwave);
+			earthquakeDots.push(catastrophicShockwave);
 		}
 	};
 
@@ -686,6 +699,7 @@
 	};
 
 	let currentYear: number | null = null;
+	let currentDate: string | null = null;
 	let hasPlayed = false;
 
 	const playAnimation = async () => {
@@ -704,12 +718,17 @@
 			const quake = sortedEarthquakeData[currentIndex];
 			addEarthquakeShockwave(quake);
 
-			// Set currentYear from quake.Date
+			// Set currentYear and currentDate from quake.Date
 			if (quake.Date) {
-				const year = new Date(quake.Date).getFullYear();
+				const date = new Date(quake.Date);
+				const year = date.getFullYear();
 				if (!isNaN(year)) {
 					currentYear = year;
 					selectedYear = year; // <-- Add this line to sync the slider
+					// Format date as "DD.MM.YYYY"
+					const day = String(date.getDate()).padStart(2, '0');
+					const month = String(date.getMonth() + 1).padStart(2, '0');
+					currentDate = `${day}.${month}.${year}`;
 				}
 			}
 
@@ -802,7 +821,7 @@
 	// Update dot visibility based on instrument filter
 	function updatePersistentDotVisibility() {
 		for (const dot of persistentDots) {
-			const instrument = dot.userData.instrument;
+			const instrument = dot.userData.instrument as 'accordion' | 'piano' | 'violin';
 			dot.visible = instrumentEnabled[instrument];
 		}
 	}
@@ -843,7 +862,7 @@
 		dot.userData.instrument = getInstrumentByDepth(depth);
 
 		// Set initial visibility
-		dot.visible = instrumentEnabled[dot.userData.instrument];
+		dot.visible = instrumentEnabled[dot.userData.instrument as 'accordion' | 'piano' | 'violin'];
 
 		persistentDotsGroup.add(dot);
 		persistentDots.push(dot);
@@ -1052,6 +1071,15 @@
 		);
 		if (idx !== -1) {
 			currentIndex = idx;
+			const quake = sortedEarthquakeData[idx];
+			// Set the current date to the first earthquake of the year
+			if (quake.Date) {
+				const date = new Date(quake.Date);
+				const day = String(date.getDate()).padStart(2, '0');
+				const month = String(date.getMonth() + 1).padStart(2, '0');
+				const yearFromDate = date.getFullYear();
+				currentDate = `${day}.${month}.${yearFromDate}`;
+			}
 			clearDots();
 			clearPersistentDots();
 			// Replay all earthquakes up to this year for persistent dots
@@ -1067,130 +1095,84 @@
 			updatePersistentDotVisibility();
 		}
 	}
+
+	// Event handlers für das Control Panel
+	function handlePlayToggle() {
+		if (isPlaying) {
+			stopAnimation();
+		} else {
+			playAnimation();
+		}
+	}
+
+	function handleRotationToggle() {
+		isGlobeRotating = !isGlobeRotating;
+	}
+
+	function handleClearDots() {
+		clearPersistentDots();
+	}
+
+	function handleSpeedChange(event: CustomEvent<number>) {
+		animationSpeed = event.detail;
+	}
+
+	function handleInstrumentToggle(event: CustomEvent<'accordion' | 'piano' | 'violin'>) {
+		toggleInstrument(event.detail);
+	}
+
+	function handleYearChange(event: CustomEvent<number>) {
+		jumpToYear(event.detail);
+	}
 </script>
 
 <div class="container">
 	<div bind:this={container} class="visualisation-container"></div>
 
-	<div class="controls">
-		<button
-			bind:this={playButton}
-			class="play-btn"
-			class:playing={isPlaying}
-			on:click={isPlaying ? stopAnimation : playAnimation}
-		>
-			{isPlaying ? "Stop" : "Play Sonification"}
-		</button>
-
-		<button
-			class="rotation-btn"
-			on:click={() => (isGlobeRotating = !isGlobeRotating)}
-		>
-			{isGlobeRotating ? "Stop Globe Rotation" : "Start Globe Rotation"}
-		</button>
-
-		<button
-			class="clear-btn"
-			on:click={clearPersistentDots}
-			disabled={isPlaying}
-		>
-			Clear Epicenter Dots
-		</button>
-
-		<div class="speed-control">
-			<label for="speed">Animation Speed:</label>
-			<input
-				type="range"
-				id="speed"
-				min="10"
-				max="500"
-				bind:value={animationSpeed}
-			/>
-			<span>{animationSpeed}ms</span>
-		</div>
-		<div class="info">
-			<div class="legend">
-				<h4>3D Depth Visualization:</h4>
-				<div
-					class="legend-item clickable {instrumentEnabled.accordion
-						? ''
-						: 'disabled'}"
-					on:click={() => toggleInstrument("accordion")}
-				>
-					<div class="color-dot red"></div>
-					<span
-						>>100m: Inner Globe (Red) - Accordion {instrumentEnabled.accordion
-							? ""
-							: "(Muted)"}</span
-					>
-				</div>
-				<div
-					class="legend-item clickable {instrumentEnabled.piano
-						? ''
-						: 'disabled'}"
-					on:click={() => toggleInstrument("piano")}
-				>
-					<div class="color-dot yellow"></div>
-					<span
-						>30-100m: Middle Globe (Yellow) - Piano {instrumentEnabled.piano
-							? ""
-							: "(Muted)"}</span
-					>
-				</div>
-				<div
-					class="legend-item clickable {instrumentEnabled.violin
-						? ''
-						: 'disabled'}"
-					on:click={() => toggleInstrument("violin")}
-				>
-					<div class="color-dot blue"></div>
-					<span
-						>0-30m: Outer Globe (Blue) - Violin {instrumentEnabled.violin
-							? ""
-							: "(Muted)"}</span
-					>
-				</div>
-
-				<h4>Visual Elements:</h4>
-				<div class="legend-item">
-					<span>• Dots: All shown on surface</span>
-				</div>
-				<div class="legend-item">
-					<span>• Rings: Spread at actual depth layer</span>
-				</div>
-
-				<h4>Magnitude → Pitch & Volume:</h4>
-				<div class="legend-item">
-					<span>Higher magnitude = Lower pitch + Louder</span>
-				</div>
-				<div class="legend-item">
-					<span>Lower magnitude = Higher pitch + Quieter</span>
-				</div>
-
-				<h4>Data Range:</h4>
-				<div class="legend-item">
-					<span>2010 - 2016 Earthquakes</span>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	{#if (isPlaying && currentYear) || (!isPlaying && hasPlayed && currentYear)}
-		<div class="year-counter">
-			<span class="year-value">{currentYear}</span>
-			<!-- Year slider and input -->
-			<div class="year-slider-row">
-				<input
-					type="range"
-					min={minYear}
-					max={maxYear}
-					bind:value={selectedYear}
-					on:input={() => jumpToYear(selectedYear)}
-					class="year-slider"
-				/>
-			</div>
+	<!-- Subtiles Datum-Overlay -->
+	{#if currentDate && (isPlaying || hasPlayed)}
+		<div class="date-overlay">
+			{currentDate}
 		</div>
 	{/if}
+
+	<!-- Zentraler Play-Button am unteren Bildschirmrand -->
+	<button 
+		class="main-play-button"
+		class:playing={isPlaying}
+		on:click={handlePlayToggle}
+		aria-label={isPlaying ? 'Stop Sonification' : 'Play Sonification'}
+	>
+		<div class="play-icon">
+			{#if isPlaying}
+				<div class="pause-bars">
+					<span></span>
+					<span></span>
+				</div>
+			{:else}
+				<div class="play-triangle"></div>
+			{/if}
+		</div>
+		<span class="play-text">{isPlaying ? "Stop" : "Play"}</span>
+	</button>
+
+	<ControlPanel
+		{isPlaying}
+		{isGlobeRotating}
+		{animationSpeed}
+		{instrumentEnabled}
+		{currentYear}
+		{hasPlayed}
+		{minYear}
+		{maxYear}
+		{selectedYear}
+		on:playToggle={handlePlayToggle}
+		on:rotationToggle={handleRotationToggle}
+		on:clearDots={handleClearDots}
+		on:speedChange={handleSpeedChange}
+		on:instrumentToggle={handleInstrumentToggle}
+		on:yearChange={handleYearChange}
+	/>
 </div>
 
 <style>
@@ -1208,364 +1190,131 @@
 		height: 100%;
 	}
 
-	.controls {
-		position: absolute;
-		top: 20px;
-		left: 20px;
-		z-index: 100;
-		display: flex;
-		flex-direction: column;
-		gap: 24px;
-		background: linear-gradient(
-			135deg,
-			rgba(10, 10, 10, 0.95),
-			rgba(26, 26, 46, 0.9)
-		);
-		padding: 30px;
-		border-radius: 20px;
-		backdrop-filter: blur(15px);
-		border: none;
-		box-shadow:
-			0 20px 40px rgba(0, 0, 0, 0.5),
-			0 0 20px rgba(100, 255, 218, 0.1);
-		min-width: 280px;
-	}
-
-	.play-btn {
-		padding: 16px 32px;
-		font-size: 16px;
-		background: linear-gradient(135deg, #64ffda, #00bcd4, #009688);
-		background-size: 200% 200%;
-		color: #000;
-		border: none;
-		border-radius: 30px;
-		cursor: pointer;
-		font-weight: 700;
-		transition: all 0.4s ease;
-		text-transform: uppercase;
-		letter-spacing: 1.5px;
-		position: relative;
-		overflow: hidden;
-		font-family: "IBM Plex Sans", sans-serif;
-		animation: gradientShift 3s ease-in-out infinite;
-	}
-
-	.play-btn::before {
-		content: "";
-		position: absolute;
-		top: 0;
-		left: -100%;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(
-			90deg,
-			transparent,
-			rgba(255, 255, 255, 0.2),
-			transparent
-		);
-		transition: left 0.5s;
-	}
-
-	.play-btn:hover::before {
-		left: 100%;
-	}
-
-	.play-btn:hover {
-		transform: translateY(-3px);
-		box-shadow: 0 15px 35px rgba(100, 255, 218, 0.4);
-	}
-
-	.play-btn.playing {
-		background: linear-gradient(135deg, #ff6b6b, #ff8e53, #ffa726);
-		background-size: 200% 200%;
-		animation: gradientShift 2s ease-in-out infinite;
-	}
-
-	.rotation-btn {
-		padding: 12px 24px;
-		font-size: 14px;
-		background: linear-gradient(135deg, #4caf50, #45a049, #66bb6a);
-		background-size: 200% 200%;
-		color: white;
-		border: none;
-		border-radius: 25px;
-		cursor: pointer;
-		font-weight: 600;
-		transition: all 0.3s ease;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-		font-family: "IBM Plex Sans", sans-serif;
-	}
-
-	.rotation-btn:hover {
-		background: linear-gradient(135deg, #45a049, #4caf50);
-		transform: translateY(-2px);
-		box-shadow: 0 10px 25px rgba(76, 175, 80, 0.3);
-	}
-
-	.clear-btn {
-		padding: 12px 24px;
-		font-size: 14px;
-		background: linear-gradient(135deg, #666, #888, #999);
-		background-size: 200% 200%;
-		color: white;
-		border: none;
-		border-radius: 25px;
-		cursor: pointer;
-		font-weight: 600;
-		transition: all 0.3s ease;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-		font-family: "IBM Plex Sans", sans-serif;
-	}
-
-	.clear-btn:hover:not(:disabled) {
-		background: linear-gradient(135deg, #ff6b6b, #ff8e53);
-		transform: translateY(-2px);
-		box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
-	}
-
-	.clear-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-		transform: none;
-		box-shadow: none;
-	}
-
-	@keyframes gradientShift {
-		0%,
-		100% {
-			background-position: 0% 50%;
-		}
-		50% {
-			background-position: 100% 50%;
-		}
-	}
-
-	.speed-control {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-		padding: 20px;
-		background: rgba(255, 255, 255, 0.05);
-		border-radius: 15px;
-		border: 1px solid rgba(100, 255, 218, 0.2);
-	}
-
-	.speed-control label {
-		font-size: 14px;
-		font-weight: 600;
-		color: #64ffda;
-		text-transform: uppercase;
-		letter-spacing: 0.5px;
-		font-family: "IBM Plex Sans", sans-serif;
-	}
-
-	.speed-control input[type="range"] {
-		width: 220px;
-		height: 6px;
-		background: rgba(255, 255, 255, 0.1);
-		border-radius: 3px;
-		outline: none;
-		-webkit-appearance: none;
-		appearance: none;
-	}
-	.speed-control input[type="range"]::-webkit-slider-thumb {
-		-webkit-appearance: none;
-		appearance: none;
-		width: 18px;
-		height: 18px;
-		background: linear-gradient(45deg, #64ffda, #00bcd4);
-		border-radius: 50%;
-		cursor: pointer;
-		box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
-	}
-
-	.speed-control input[type="range"]::-moz-range-thumb {
-		width: 18px;
-		height: 18px;
-		background: linear-gradient(45deg, #64ffda, #00bcd4);
-		border-radius: 50%;
-		cursor: pointer;
-		border: none;
-		box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
-	}
-
-	.speed-control span {
-		font-size: 13px;
-		color: #64ffda;
-		font-weight: 600;
-		text-align: center;
-		background: rgba(100, 255, 218, 0.1);
-		padding: 4px 12px;
-		border-radius: 20px;
-		border: 1px solid rgba(100, 255, 218, 0.3);
-	}
-
-	.info {
-		max-width: 280px;
-		background: rgba(255, 255, 255, 0.03);
-		padding: 20px;
-		border-radius: 15px;
-		border: 1px solid rgba(100, 255, 218, 0.1);
-	}
-
-	.legend h4 {
-		margin: 0 0 15px 0;
-		color: #64ffda;
-		font-size: 15px;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 1px;
-		font-family: "IBM Plex Sans", sans-serif;
-		border-bottom: 2px solid rgba(100, 255, 218, 0.3);
-		padding-bottom: 8px;
-	}
-
-	.legend-item {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		margin-bottom: 10px;
-		font-size: 13px;
-		font-weight: 500;
-		color: rgba(255, 255, 255, 0.9);
-		padding: 8px 0;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-	}
-
-	.legend-item:last-child {
-		border-bottom: none;
-	}
-
-	.color-dot {
-		width: 14px;
-		height: 14px;
-		border-radius: 50%;
-		box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
-		border: 2px solid rgba(255, 255, 255, 0.2);
-	}
-
-	.color-dot.red {
-		background: linear-gradient(45deg, #ff4444, #ff6666);
-		box-shadow: 0 0 10px rgba(255, 68, 68, 0.6);
-	}
-
-	.color-dot.yellow {
-		background: linear-gradient(45deg, #ffff44, #ffff66);
-		box-shadow: 0 0 10px rgba(255, 255, 68, 0.6);
-	}
-
-	.color-dot.blue {
-		background: linear-gradient(45deg, #4444ff, #6666ff);
-		box-shadow: 0 0 10px rgba(68, 68, 255, 0.6);
-	}
-
-	.year-counter {
+	/* Subtiles Datum-Overlay */
+	.date-overlay {
 		position: fixed;
-		right: 40px;
-		bottom: 40px;
+		top: 30px;
+		right: 30px;
+		z-index: 100;
+		font-family: "IBM Plex Mono", monospace;
+		font-size: 14px;
+		color: rgba(255, 255, 255, 0.6);
+		background: rgba(0, 0, 17, 0.3);
+		backdrop-filter: blur(10px);
+		padding: 8px 12px;
+		border-radius: 6px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		transition: all 0.3s ease;
+		pointer-events: none;
+	}
+
+	.date-overlay:hover {
+		color: rgba(255, 255, 255, 0.8);
+		background: rgba(0, 0, 17, 0.5);
+	}
+
+	/* Zentraler Play-Button */
+	.main-play-button {
+		position: fixed;
+		bottom: 30px;
+		left: 50%;
+		transform: translateX(-50%);
 		z-index: 200;
+		width: 52px;
+		height: 52px;
+		background: transparent;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 4px;
+		cursor: pointer;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		background: rgba(255, 255, 255, 0.03);
-		border-radius: 15px;
-		border: 1.5px solid rgba(100, 255, 218, 0.25);
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-		padding: 18px 38px 14px 38px;
-		min-width: 100px;
-		transition: opacity 0.3s;
-	}
-
-	.year-value {
-		font-size: 2rem;
-		font-weight: 600;
-		color: #64ffda;
-		letter-spacing: 0.08em;
+		gap: 2px;
+		transition: all 0.2s ease;
 		font-family: "IBM Plex Sans", sans-serif;
-		line-height: 1;
 	}
 
-	.year-slider-row {
+	.main-play-button:hover {
+		border-color: rgba(255, 255, 255, 0.4);
+		background: rgba(255, 255, 255, 0.02);
+	}
+
+	.main-play-button.playing {
+		border-color: rgba(255, 255, 255, 0.4);
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	.play-icon {
+		width: 16px;
+		height: 16px;
 		display: flex;
 		align-items: center;
-		gap: 16px;
-		margin-top: 14px;
+		justify-content: center;
 	}
 
-	.year-slider {
-		width: 220px;
-		height: 6px;
-		background: rgba(255, 255, 255, 0.1);
-		border-radius: 3px;
-		outline: none;
-		-webkit-appearance: none;
-		appearance: none;
-	}
-	.year-slider::-webkit-slider-thumb {
-		-webkit-appearance: none;
-		appearance: none;
-		width: 18px;
-		height: 18px;
-		background: linear-gradient(45deg, #64ffda, #00bcd4);
-		border-radius: 50%;
-		cursor: pointer;
-		box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
-	}
-	.year-slider::-moz-range-thumb {
-		width: 18px;
-		height: 18px;
-		background: linear-gradient(45deg, #64ffda, #00bcd4);
-		border-radius: 50%;
-		cursor: pointer;
-		border: none;
-		box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
-	}
-	.year-slider:focus {
-		outline: none;
+	.play-triangle {
+		width: 0;
+		height: 0;
+		border-left: 9px solid rgba(255, 255, 255, 0.8);
+		border-top: 6px solid transparent;
+		border-bottom: 6px solid transparent;
+		margin-left: 1px;
 	}
 
+	.pause-bars {
+		display: flex;
+		gap: 3px;
+	}
+
+	.pause-bars span {
+		width: 3px;
+		height: 12px;
+		background: rgba(255, 255, 255, 0.8);
+		border-radius: 1px;
+	}
+
+	.play-text {
+		font-size: 9px;
+		font-weight: 400;
+		color: rgba(255, 255, 255, 0.6);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	/* Responsive Design */
 	@media (max-width: 768px) {
-		.controls {
-			top: 10px;
-			left: 10px;
-			padding: 20px;
-			max-width: calc(100vw - 40px);
-			min-width: auto;
+		.date-overlay {
+			top: 20px;
+			right: 20px;
+			font-size: 12px;
+			padding: 6px 10px;
 		}
 
-		.speed-control input[type="range"] {
-			width: 180px;
+		.main-play-button {
+			width: 44px;
+			height: 44px;
+			bottom: 20px;
 		}
 
-		.info {
-			max-width: 100%;
+		.play-icon {
+			width: 14px;
+			height: 14px;
 		}
 
-		.year-counter {
-			right: 10px;
-			bottom: 10px;
-			padding: 10px 16px 8px 16px;
-			min-width: 60px;
+		.play-triangle {
+			border-left-width: 7px;
+			border-top-width: 5px;
+			border-bottom-width: 5px;
 		}
-		.year-value {
-			font-size: 1.2rem;
-		}
-	}
 
-	.legend-item.clickable {
-		cursor: pointer;
-		transition:
-			background 0.2s,
-			opacity 0.2s;
-	}
-	.legend-item.clickable:hover {
-		background: rgba(100, 255, 218, 0.08);
-	}
-	.legend-item.disabled {
-		opacity: 0.4;
-		text-decoration: line-through;
+		.pause-bars span {
+			width: 2px;
+			height: 10px;
+		}
+
+		.play-text {
+			font-size: 8px;
+		}
 	}
 </style>

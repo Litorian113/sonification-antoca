@@ -1,1 +1,13 @@
-/* Add your global styles here */
+/* Global styles */
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	background: #000011;
+	color: white;
+	overflow: hidden;
+}
