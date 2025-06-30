@@ -87,8 +87,12 @@
 							<span class="magnitude-label">Magnitude Range</span>
 							<span class="magnitude-value">5.5 - 7.5+</span>
 						</div>
+						<div class="volume-range">
+							<span class="volume-label">Volume Mapping</span>
+							<span class="volume-value">mag * 0.15</span>
+						</div>
 						<p class="card-description">
-							Surface earthquakes produce high-pitched violin sounds. These shallow events often cause the most structural damage and are represented by blue tones. <strong>Volume increases with earthquake magnitude.</strong>
+							Surface earthquakes produce high-pitched violin sounds. These shallow events often cause the most structural damage and are represented by blue tones.
 						</p>
 						<div class="color-indicator violin-color"></div>
 					</div>
@@ -109,8 +113,12 @@
 							<span class="magnitude-label">Magnitude Range</span>
 							<span class="magnitude-value">5.5 - 7.5+</span>
 						</div>
+						<div class="volume-range">
+							<span class="volume-label">Volume Mapping</span>
+							<span class="volume-value">mag * 0.15</span>
+						</div>
 						<p class="card-description">
-							Intermediate depth earthquakes are mapped to piano sounds with balanced tones. These events appear as warm orange colors and represent the middle crustal layer. <strong>Volume increases with earthquake magnitude.</strong>
+							Intermediate depth earthquakes are mapped to piano sounds with balanced tones. These events appear as warm orange colors and represent the middle crustal layer.
 						</p>
 						<div class="color-indicator piano-color"></div>
 					</div>
@@ -131,8 +139,12 @@
 							<span class="magnitude-label">Magnitude Range</span>
 							<span class="magnitude-value">5.5 - 7.5+</span>
 						</div>
+						<div class="volume-range">
+							<span class="volume-label">Volume Mapping</span>
+							<span class="volume-value">mag * 0.15</span>
+						</div>
 						<p class="card-description">
-							Deep earthquakes are represented by rich accordion tones. These profound events appear as golden yellow colors and originate from the deepest crustal layers. <strong>Volume increases with earthquake magnitude.</strong>
+							Deep earthquakes are represented by rich accordion tones. These profound events appear as golden yellow colors and originate from the deepest crustal layers.
 						</p>
 						<div class="color-indicator accordion-color"></div>
 					</div>
@@ -146,15 +158,19 @@
 					<div class="card-content">
 						<h3 class="card-title">Percussion</h3>
 						<div class="depth-range">
-							<span class="depth-label">Magnitude</span>
-							<span class="depth-value">8.0+</span>
+							<span class="depth-label">Audio Level</span>
+							<span class="depth-value">Max</span>
 						</div>
 						<div class="magnitude-range">
-							<span class="magnitude-label">Volume Range</span>
-							<span class="magnitude-value">Very Loud</span>
+							<span class="magnitude-label">Trigger Level</span>
+							<span class="magnitude-value">Catastrophic</span>
+						</div>
+						<div class="volume-range">
+							<span class="volume-label">Volume Mapping</span>
+							<span class="volume-value">mag * 0.8</span>
 						</div>
 						<p class="card-description">
-							Catastrophic earthquakes (magnitude 8+) trigger powerful percussion sounds regardless of depth. These rare, devastating events appear as bright cream-colored bursts. <strong>Maximum volume for catastrophic events.</strong>
+							Catastrophic earthquakes (magnitude 8+) trigger powerful percussion sounds regardless of depth. These rare, devastating events appear as bright cream-colored bursts.
 						</p>
 						<div class="color-indicator percussion-color"></div>
 					</div>
@@ -509,8 +525,19 @@
 		border-radius: 4px;
 	}
 
+	.volume-range {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1rem;
+		padding: 0.75rem 1rem;
+		background: #f8f9fa;
+		border-radius: 4px;
+	}
+
 	.depth-label,
-	.magnitude-label {
+	.magnitude-label,
+	.volume-label {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 0.85rem;
 		color: #6b7280;
@@ -518,7 +545,8 @@
 	}
 
 	.depth-value,
-	.magnitude-value {
+	.magnitude-value,
+	.volume-value {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 0.9rem;
 		color: #1a1a1a;
