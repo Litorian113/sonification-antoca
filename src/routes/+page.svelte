@@ -7,14 +7,41 @@
 		cardEarthquake, 
 		creditsEarthquake 
 	} from '$lib/actions';
+	import { browser } from '$app/environment';
 
 	let mounted = false;
 	let heroSection: HTMLElement;
 	let instrumentsSection: HTMLElement;
+	
+	// Theme system
+	let isDarkMode = true; // Default to dark mode
 
 	onMount(() => {
 		mounted = true;
+		
+		// Load saved theme preference
+		if (browser) {
+			const savedTheme = localStorage.getItem('earthquake-theme');
+			isDarkMode = savedTheme ? savedTheme === 'dark' : true; // Default to dark
+			updateTheme();
+		}
 	});
+
+	function toggleTheme() {
+		isDarkMode = !isDarkMode;
+		updateTheme();
+		
+		// Save preference
+		if (browser) {
+			localStorage.setItem('earthquake-theme', isDarkMode ? 'dark' : 'light');
+		}
+	}
+
+	function updateTheme() {
+		if (browser && document.body) {
+			document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+		}
+	}
 
 	function scrollToInstruments() {
 		if (instrumentsSection) {
@@ -36,6 +63,22 @@
 </svelte:head>
 
 <main class="main-container">
+	<!-- Theme Toggle Button -->
+	<button class="theme-toggle" on:click={toggleTheme} aria-label="Toggle theme">
+		{#if isDarkMode}
+			<!-- Sun icon for switching to light mode -->
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<circle cx="12" cy="12" r="5"/>
+				<path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+			</svg>
+		{:else}
+			<!-- Moon icon for switching to dark mode -->
+			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+			</svg>
+		{/if}
+	</button>
+
 	<!-- Hero Section -->
 	<section class="hero-section" bind:this={heroSection}>
 		<div class="hero-content" class:fade-in={mounted}>
@@ -278,14 +321,40 @@
 </main>
 
 <style>
+	/* CSS Custom Properties für Themes */
+	:global(:root) {
+		/* Light Mode (Default) */
+		--bg-primary: #ffffff;
+		--bg-secondary: #fafafa;
+		--text-primary: #1a1a1a;
+		--text-secondary: #6b7280;
+		--accent-color: #2563eb;
+		--border-color: rgba(0, 0, 0, 0.1);
+		--border-light: rgba(0, 0, 0, 0.05);
+		--shadow-color: rgba(0, 0, 0, 0.1);
+	}
+
+	:global([data-theme="dark"]) {
+		/* Dark Mode */
+		--bg-primary: #0a0a0a;
+		--bg-secondary: #111111;
+		--text-primary: #ffffff;
+		--text-secondary: #a1a1aa;
+		--accent-color: #3b82f6;
+		--border-color: rgba(255, 255, 255, 0.1);
+		--border-light: rgba(255, 255, 255, 0.05);
+		--shadow-color: rgba(0, 0, 0, 0.3);
+	}
+
 	:global(body) {
 		margin: 0;
 		padding: 0;
 		font-family: 'IBM Plex Sans', sans-serif;
-		background: #ffffff !important;
-		color: #1a1a1a !important;
+		background: var(--bg-primary) !important;
+		color: var(--text-primary) !important;
 		line-height: 1.6;
 		overflow: visible !important;
+		transition: background-color 0.3s ease, color 0.3s ease;
 	}
 
 	:global(html) {
@@ -296,9 +365,45 @@
 		box-sizing: border-box;
 	}
 
+	/* Theme Toggle Button */
+	.theme-toggle {
+		position: fixed;
+		top: 2rem;
+		right: 2rem;
+		z-index: 1000;
+		width: 48px;
+		height: 48px;
+		background: var(--bg-primary);
+		border: 1px solid var(--border-color);
+		border-radius: 8px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+		backdrop-filter: blur(10px);
+		box-shadow: 0 4px 12px var(--shadow-color);
+	}
+
+	.theme-toggle:hover {
+		border-color: var(--accent-color);
+		transform: translateY(-1px);
+		box-shadow: 0 6px 16px var(--shadow-color);
+	}
+
+	.theme-toggle svg {
+		color: var(--text-secondary);
+		transition: color 0.2s ease;
+	}
+
+	.theme-toggle:hover svg {
+		color: var(--accent-color);
+	}
+
 	.main-container {
 		min-height: 100vh;
-		background: #ffffff;
+		background: var(--bg-primary);
+		transition: background-color 0.3s ease;
 	}
 
 	/* Hero Section */
@@ -308,8 +413,9 @@
 		align-items: center;
 		justify-content: center;
 		padding: 2rem;
-		background: #ffffff;
-		border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+		background: var(--bg-primary);
+		border-bottom: 1px solid var(--border-light);
+		transition: background-color 0.3s ease, border-color 0.3s ease;
 	}
 
 	.hero-content {
@@ -340,24 +446,27 @@
 
 	.title-primary {
 		display: block;
-		color: #1a1a1a;
+		color: var(--text-primary);
 		font-weight: 300;
+		transition: color 0.3s ease;
 	}
 
 	.title-accent {
 		display: block;
-		color: #2563eb;
+		color: var(--accent-color);
 		font-weight: 400;
+		transition: color 0.3s ease;
 	}
 
 	.hero-subtitle {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 1.1rem;
 		font-weight: 400;
-		color: #6b7280;
+		color: var(--text-secondary);
 		max-width: 600px;
 		margin: 0 auto;
 		line-height: 1.6;
+		transition: color 0.3s ease;
 	}
 
 	.hero-actions {
@@ -374,8 +483,8 @@
 		gap: 0.5rem;
 		padding: 1rem 2rem;
 		background: transparent;
-		border: 1px solid #2563eb;
-		color: #2563eb;
+		border: 1px solid var(--accent-color);
+		color: var(--accent-color);
 		text-decoration: none;
 		border-radius: 4px;
 		font-family: 'IBM Plex Sans', sans-serif;
@@ -386,8 +495,8 @@
 	}
 
 	.btn-primary:hover {
-		background: #2563eb;
-		color: #ffffff;
+		background: var(--accent-color);
+		color: var(--bg-primary);
 	}
 
 	.btn-primary.large {
@@ -401,8 +510,8 @@
 		gap: 0.5rem;
 		padding: 1rem 2rem;
 		background: transparent;
-		border: 1px solid rgba(0, 0, 0, 0.2);
-		color: #6b7280;
+		border: 1px solid var(--border-color);
+		color: var(--text-secondary);
 		border-radius: 4px;
 		font-family: 'IBM Plex Sans', sans-serif;
 		font-size: 1rem;
@@ -412,14 +521,15 @@
 	}
 
 	.btn-secondary:hover {
-		border-color: rgba(0, 0, 0, 0.4);
-		color: #1a1a1a;
+		border-color: var(--accent-color);
+		color: var(--accent-color);
 	}
 
 	/* Instruments Section */
 	.instruments-section {
 		padding: 5rem 0;
-		background: #fafafa;
+		background: var(--bg-secondary);
+		transition: background-color 0.3s ease;
 	}
 
 	.container {
@@ -440,17 +550,19 @@
 		font-family: 'IBM Plex Sans', sans-serif;
 		font-size: clamp(2rem, 5vw, 3rem);
 		font-weight: 300;
-		color: #1a1a1a;
+		color: var(--text-primary);
 		margin: 0 0 1.5rem 0;
 		letter-spacing: -0.01em;
+		transition: color 0.3s ease;
 	}
 
 	.section-description {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 1.1rem;
-		color: #6b7280;
+		color: var(--text-secondary);
 		margin: 0;
 		line-height: 1.7;
+		transition: color 0.3s ease;
 	}
 
 	/* Instruments Grid */
@@ -462,27 +574,28 @@
 	}
 
 	.instrument-card {
-		background: #ffffff;
-		border: 1px solid rgba(0, 0, 0, 0.1);
+		background: var(--bg-primary);
+		border: 1px solid var(--border-color);
 		border-radius: 4px;
 		overflow: hidden;
 		transition: all 0.3s ease;
 	}
 
 	.instrument-card:hover {
-		border-color: rgba(0, 0, 0, 0.2);
+		border-color: var(--accent-color);
 		transform: translateY(-2px);
-		box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 8px 25px var(--shadow-color);
 	}
 
 	.card-image {
 		height: 200px;
 		overflow: hidden;
-		background: #f8f9fa;
+		background: var(--bg-secondary);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		padding: 2rem;
+		transition: background-color 0.3s ease;
 	}
 
 	.card-image img {
@@ -507,8 +620,9 @@
 		font-family: 'IBM Plex Sans', sans-serif;
 		font-size: 1.5rem;
 		font-weight: 500;
-		color: #1a1a1a;
+		color: var(--text-primary);
 		margin: 0 0 1rem 0;
+		transition: color 0.3s ease;
 	}
 
 	.depth-range {
@@ -517,8 +631,10 @@
 		align-items: center;
 		margin-bottom: 0.75rem;
 		padding: 0.75rem 1rem;
-		background: #f8f9fa;
+		background: var(--bg-secondary);
 		border-radius: 4px;
+		border: 1px solid var(--border-light);
+		transition: background-color 0.3s ease, border-color 0.3s ease;
 	}
 
 	.magnitude-range {
@@ -527,8 +643,10 @@
 		align-items: center;
 		margin-bottom: 1rem;
 		padding: 0.75rem 1rem;
-		background: #f8f9fa;
+		background: var(--bg-secondary);
 		border-radius: 4px;
+		border: 1px solid var(--border-light);
+		transition: background-color 0.3s ease, border-color 0.3s ease;
 	}
 
 	.volume-range {
@@ -537,8 +655,10 @@
 		align-items: center;
 		margin-bottom: 1rem;
 		padding: 0.75rem 1rem;
-		background: #f8f9fa;
+		background: var(--bg-secondary);
 		border-radius: 4px;
+		border: 1px solid var(--border-light);
+		transition: background-color 0.3s ease, border-color 0.3s ease;
 	}
 
 	.depth-label,
@@ -546,8 +666,9 @@
 	.volume-label {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 0.85rem;
-		color: #6b7280;
+		color: var(--text-secondary);
 		font-weight: 500;
+		transition: color 0.3s ease;
 	}
 
 	.depth-value,
@@ -555,15 +676,17 @@
 	.volume-value {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 0.9rem;
-		color: #1a1a1a;
+		color: var(--text-primary);
 		font-weight: 600;
+		transition: color 0.3s ease;
 	}
 
 	.card-description {
 		font-family: 'IBM Plex Sans', sans-serif;
 		font-size: 0.95rem;
-		color: #6b7280;
+		color: var(--text-secondary);
 		margin: 0 0 1.5rem 0;
+		transition: color 0.3s ease;
 		line-height: 1.6;
 	}
 
@@ -603,27 +726,28 @@
 	}
 
 	.info-item {
-		background: #ffffff;
-		border: 1px solid rgba(0, 0, 0, 0.1);
+		background: var(--bg-primary);
+		border: 1px solid var(--border-color);
 		border-radius: 4px;
 		overflow: hidden;
 		transition: all 0.3s ease;
 	}
 
 	.info-item:hover {
-		border-color: rgba(0, 0, 0, 0.2);
+		border-color: var(--accent-color);
 		transform: translateY(-2px);
-		box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 8px 25px var(--shadow-color);
 	}
 
 	.info-image {
 		height: 120px;
 		overflow: hidden;
-		background: #f8f9fa;
+		background: var(--bg-secondary);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		padding: 1rem;
+		transition: background-color 0.3s ease;
 	}
 
 	.info-image img {
@@ -648,16 +772,18 @@
 		font-family: 'IBM Plex Sans', sans-serif;
 		font-size: 1.1rem;
 		font-weight: 500;
-		color: #1a1a1a;
+		color: var(--text-primary);
 		margin: 0 0 0.75rem 0;
+		transition: color 0.3s ease;
 	}
 
 	.info-item p {
 		font-family: 'IBM Plex Sans', sans-serif;
 		font-size: 0.95rem;
-		color: #6b7280;
+		color: var(--text-secondary);
 		margin: 0;
 		line-height: 1.6;
+		transition: color 0.3s ease;
 	}
 
 	/* CTA Section */
@@ -674,8 +800,9 @@
 	/* Credits Section */
 	.credits-section {
 		padding: 4rem 0;
-		background: #ffffff;
-		border-top: 1px solid rgba(0, 0, 0, 0.05);
+		background: var(--bg-primary);
+		border-top: 1px solid var(--border-light);
+		transition: background-color 0.3s ease, border-color 0.3s ease;
 	}
 
 	.credits-content {
@@ -692,9 +819,10 @@
 		font-family: 'IBM Plex Sans', sans-serif;
 		font-size: clamp(1.5rem, 4vw, 2.5rem);
 		font-weight: 300;
-		color: #1a1a1a;
+		color: var(--text-primary);
 		margin: 0;
 		letter-spacing: -0.01em;
+		transition: color 0.3s ease;
 	}
 
 	.credits-info {
@@ -707,10 +835,11 @@
 	.course-info {
 		font-family: 'IBM Plex Sans', sans-serif;
 		font-size: 1.1rem;
-		color: #6b7280;
+		color: var(--text-secondary);
 		margin: 0;
 		line-height: 1.7;
 		max-width: 600px;
+		transition: color 0.3s ease;
 	}
 
 	.supervision,
@@ -723,10 +852,11 @@
 		font-family: 'IBM Plex Sans', sans-serif;
 		font-size: 1rem;
 		font-weight: 500;
-		color: #1a1a1a;
+		color: var(--text-primary);
 		margin: 0 0 1rem 0;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+		transition: color 0.3s ease;
 	}
 
 	.supervisors {
@@ -739,8 +869,9 @@
 	.supervisors span {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 1rem;
-		color: #2563eb;
+		color: var(--accent-color);
 		font-weight: 500;
+		transition: color 0.3s ease;
 	}
 
 	.team-members {
