@@ -797,6 +797,335 @@
 		return gridGroup; // Return reference for rotation
 	}
 
+	// Country Borders System - Using Natural Earth Data
+	let countryBordersGroup: THREE.Group | null = null;
+
+	// Create country borders overlay using Natural Earth data
+	async function createCountryBordersOverlay() {
+		try {
+			console.log("Loading country borders from Natural Earth...");
+			
+			// Create borders group
+			countryBordersGroup = new THREE.Group();
+			
+			// Try to load from Natural Earth via CDN
+			const bordersTexture = await loadCountryBordersTexture();
+			
+			if (bordersTexture) {
+				// Create a slightly larger sphere for borders overlay
+				const bordersGeometry = new THREE.SphereGeometry(7.01, 128, 128);
+				
+				// Create material with the borders texture
+				const bordersMaterial = new THREE.MeshBasicMaterial({
+					map: bordersTexture,
+					transparent: true,
+					opacity: 0.6,
+					side: THREE.FrontSide,
+					depthWrite: false,
+					blending: THREE.NormalBlending,
+				});
+				
+				const bordersMesh = new THREE.Mesh(bordersGeometry, bordersMaterial);
+				countryBordersGroup.add(bordersMesh);
+				
+				scene.add(countryBordersGroup);
+				console.log("Country borders loaded successfully!");
+			} else {
+				console.warn("Failed to load country borders, creating fallback");
+				await createFallbackBorders();
+			}
+		} catch (error) {
+			console.error("Error creating country borders:", error);
+			await createFallbackBorders();
+		}
+	}
+
+	// Load country borders texture from Natural Earth
+	async function loadCountryBordersTexture(): Promise<THREE.Texture | null> {
+		// Natural Earth sources (in order of preference)
+		const sources = [
+			"https://cdn.jsdelivr.net/npm/world-atlas@3/countries-50m.json",
+			"https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson",
+			"https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson"
+		];
+
+		for (const source of sources) {
+			try {
+				console.log(`Trying to load from: ${source}`);
+				const response = await fetch(source);
+				
+				if (!response.ok) {
+					throw new Error(`HTTP ${response.status}`);
+				}
+				
+				const data = await response.json();
+				console.log("GeoJSON data loaded, creating texture...");
+				
+				// Create texture from GeoJSON data
+				const texture = createTextureFromGeoJSON(data);
+				
+				if (texture) {
+					console.log("Texture created successfully!");
+					return texture;
+				}
+			} catch (error) {
+				console.warn(`Failed to load from ${source}:`, error);
+			}
+		}
+
+		return null;
+	}
+
+	// Create texture from GeoJSON data
+	function createTextureFromGeoJSON(geoData: any): THREE.Texture | null {
+		try {
+			// Create high-resolution canvas for world map
+			const canvas = document.createElement('canvas');
+			canvas.width = 2048;
+			canvas.height = 1024;
+			const ctx = canvas.getContext('2d');
+			
+			if (!ctx) {
+				throw new Error("Could not get 2D context");
+			}
+
+			// Clear with transparent background
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			
+			// Set up drawing style for country borders
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+			ctx.lineWidth = 1;
+			ctx.lineCap = 'round';
+			ctx.lineJoin = 'round';
+			
+			// Handle both TopoJSON and GeoJSON formats
+			let features;
+			if (geoData.type === 'Topology' && geoData.objects) {
+				// TopoJSON format (Natural Earth)
+				if (typeof topojson !== 'undefined') {
+					features = topojson.feature(geoData, geoData.objects.countries || geoData.objects.world).features;
+				} else {
+					console.warn("TopoJSON library not available, skipping this source");
+					return null;
+				}
+			} else if (geoData.type === 'FeatureCollection') {
+				// GeoJSON format
+				features = geoData.features;
+			} else if (geoData.features) {
+				// Sometimes wrapped differently
+				features = geoData.features;
+			} else {
+				console.warn("Unknown data format:", geoData);
+				return null;
+			}
+
+			console.log(`Processing ${features.length} country features...`);
+
+			// Draw each country's borders
+			for (const feature of features) {
+				if (feature.geometry) {
+					drawGeometry(ctx, feature.geometry, canvas.width, canvas.height);
+				}
+			}
+
+			// Create Three.js texture from canvas
+			const texture = new THREE.CanvasTexture(canvas);
+			texture.wrapS = THREE.RepeatWrapping;
+			texture.wrapT = THREE.ClampToEdgeWrapping;
+			texture.magFilter = THREE.LinearFilter;
+			texture.minFilter = THREE.LinearMipmapLinearFilter;
+			texture.flipY = false; // Important for proper orientation
+			
+			return texture;
+		} catch (error) {
+			console.error("Error creating texture from GeoJSON:", error);
+			return null;
+		}
+	}
+
+	// Draw geometry (polygons/lines) on canvas
+	function drawGeometry(ctx: CanvasRenderingContext2D, geometry: any, width: number, height: number) {
+		if (!geometry || !geometry.coordinates) return;
+
+		const type = geometry.type;
+		
+		if (type === 'Polygon') {
+			drawPolygon(ctx, geometry.coordinates, width, height);
+		} else if (type === 'MultiPolygon') {
+			for (const polygon of geometry.coordinates) {
+				drawPolygon(ctx, polygon, width, height);
+			}
+		} else if (type === 'LineString') {
+			drawLineString(ctx, geometry.coordinates, width, height);
+		} else if (type === 'MultiLineString') {
+			for (const line of geometry.coordinates) {
+				drawLineString(ctx, line, width, height);
+			}
+		}
+	}
+
+	// Draw polygon (country border)
+	function drawPolygon(ctx: CanvasRenderingContext2D, coordinates: number[][][], width: number, height: number) {
+		for (const ring of coordinates) {
+			if (ring.length < 2) continue;
+			
+			ctx.beginPath();
+			
+			for (let i = 0; i < ring.length; i++) {
+				const [lon, lat] = ring[i];
+				
+				// Convert geographic coordinates to canvas coordinates
+				// Longitude: -180 to 180 -> 0 to width
+				// Latitude: -90 to 90 -> 0 to height (corrected for proper orientation)
+				const x = (lon + 180) * (width / 360);
+				const y = (lat + 90) * (height / 180);
+				
+				if (i === 0) {
+					ctx.moveTo(x, y);
+				} else {
+					ctx.lineTo(x, y);
+				}
+			}
+			
+			ctx.stroke();
+		}
+	}
+
+	// Draw line string
+	function drawLineString(ctx: CanvasRenderingContext2D, coordinates: number[][], width: number, height: number) {
+		if (coordinates.length < 2) return;
+		
+		ctx.beginPath();
+		
+		for (let i = 0; i < coordinates.length; i++) {
+			const [lon, lat] = coordinates[i];
+			const x = (lon + 180) * (width / 360);
+			const y = (lat + 90) * (height / 180);
+			
+			if (i === 0) {
+				ctx.moveTo(x, y);
+			} else {
+				ctx.lineTo(x, y);
+			}
+		}
+		
+		ctx.stroke();
+	}
+
+	// Fallback: Create simple borders from static SVG
+	async function createFallbackBorders() {
+		try {
+			console.log("Creating fallback world map...");
+			
+			// Try to load from local static file first
+			let svgContent = await loadLocalWorldSVG();
+			
+			if (!svgContent) {
+				// Create a basic world outline as fallback
+				svgContent = createBasicWorldSVG();
+			}
+			
+			if (svgContent) {
+				const texture = createTextureFromSVG(svgContent);
+				
+				if (texture) {
+					const bordersGeometry = new THREE.SphereGeometry(7.01, 128, 128);
+					const bordersMaterial = new THREE.MeshBasicMaterial({
+						map: texture,
+						transparent: true,
+						opacity: 0.4,
+						side: THREE.FrontSide,
+					});
+					
+					const bordersMesh = new THREE.Mesh(bordersGeometry, bordersMaterial);
+					
+					if (countryBordersGroup) {
+						countryBordersGroup.add(bordersMesh);
+					}
+					
+					console.log("Fallback borders created!");
+				}
+			}
+		} catch (error) {
+			console.error("Failed to create fallback borders:", error);
+		}
+	}
+
+	// Load world map from local static file
+	async function loadLocalWorldSVG(): Promise<string | null> {
+		try {
+			const response = await fetch('/static/map/world.svg');
+			if (response.ok) {
+				return await response.text();
+			}
+		} catch (error) {
+			console.warn("Local world.svg not found");
+		}
+		return null;
+	}
+
+	// Create basic world SVG outline
+	function createBasicWorldSVG(): string {
+		return `
+			<svg width="360" height="180" xmlns="http://www.w3.org/2000/svg">
+				<defs>
+					<style>
+						.country-border { 
+							fill: none; 
+							stroke: rgba(255,255,255,0.4); 
+							stroke-width: 0.5; 
+						}
+					</style>
+				</defs>
+				<!-- Simplified world continents outline -->
+				<path class="country-border" d="M20,60 Q80,40 140,60 T220,70 Q280,50 340,70 L340,120 Q280,140 220,130 T140,120 Q80,140 20,120 Z"/>
+				<path class="country-border" d="M60,100 Q100,90 140,100 T200,110 L200,140 Q140,150 100,140 T60,130 Z"/>
+				<path class="country-border" d="M240,90 Q280,80 320,90 L320,110 Q280,120 240,110 Z"/>
+			</svg>
+		`;
+	}
+
+	// Create texture from SVG content
+	function createTextureFromSVG(svgContent: string): THREE.Texture | null {
+		try {
+			const canvas = document.createElement('canvas');
+			canvas.width = 2048;
+			canvas.height = 1024;
+			const ctx = canvas.getContext('2d');
+			
+			if (!ctx) return null;
+
+			const img = new Image();
+			const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' });
+			const url = URL.createObjectURL(svgBlob);
+			
+			return new Promise((resolve) => {
+				img.onload = () => {
+					ctx.clearRect(0, 0, canvas.width, canvas.height);
+					ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+					URL.revokeObjectURL(url);
+					
+					const texture = new THREE.CanvasTexture(canvas);
+					texture.wrapS = THREE.RepeatWrapping;
+					texture.wrapT = THREE.ClampToEdgeWrapping;
+					texture.flipY = false;
+					
+					resolve(texture);
+				};
+				
+				img.onerror = () => {
+					URL.revokeObjectURL(url);
+					resolve(null);
+				};
+				
+				img.src = url;
+			});
+		} catch (error) {
+			console.error("Error creating texture from SVG:", error);
+			return null;
+		}
+	}
+
 	// Instrument filter state
 	let instrumentEnabled = {
 		accordion: true,
@@ -947,6 +1276,9 @@
 			globe = new THREE.Mesh(geometry, material);
 			scene.add(globe);
 
+			// Create country borders overlay
+			await createCountryBordersOverlay();
+
 			// Add subtle white latitude/longitude grid lines
 			gridGroup = createGridLines();
 
@@ -975,6 +1307,11 @@
 						// Rotate grid lines
 						if (gridGroup) {
 							gridGroup.rotation.y += globeRotationSpeed;
+						}
+
+						// Rotate country borders
+						if (countryBordersGroup) {
+							countryBordersGroup.rotation.y += globeRotationSpeed;
 						}
 
 						// Rotate persistent dots group
