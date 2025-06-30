@@ -895,7 +895,7 @@
 
 	.member:hover {
 		border-color: rgba(0, 0, 0, 0.2);
-		background: #f8f9fa;
+		background: var(--bg-secondary);
 	}
 
 	/* Responsive Design */
