@@ -83,8 +83,12 @@
 							<span class="depth-label">Depth Range</span>
 							<span class="depth-value">0 - 30 km</span>
 						</div>
+						<div class="magnitude-range">
+							<span class="magnitude-label">Magnitude Range</span>
+							<span class="magnitude-value">5.5 - 7.5+</span>
+						</div>
 						<p class="card-description">
-							Surface earthquakes produce high-pitched violin sounds. These shallow events often cause the most structural damage and are represented by blue tones on the visualization.
+							Surface earthquakes produce high-pitched violin sounds. These shallow events often cause the most structural damage and are represented by blue tones. <strong>Volume increases with earthquake magnitude.</strong>
 						</p>
 						<div class="color-indicator violin-color"></div>
 					</div>
@@ -101,8 +105,12 @@
 							<span class="depth-label">Depth Range</span>
 							<span class="depth-value">30 - 100 km</span>
 						</div>
+						<div class="magnitude-range">
+							<span class="magnitude-label">Magnitude Range</span>
+							<span class="magnitude-value">5.5 - 7.5+</span>
+						</div>
 						<p class="card-description">
-							Intermediate depth earthquakes are mapped to piano sounds with balanced tones. These events appear as warm orange colors and represent the middle crustal layer.
+							Intermediate depth earthquakes are mapped to piano sounds with balanced tones. These events appear as warm orange colors and represent the middle crustal layer. <strong>Volume increases with earthquake magnitude.</strong>
 						</p>
 						<div class="color-indicator piano-color"></div>
 					</div>
@@ -119,8 +127,12 @@
 							<span class="depth-label">Depth Range</span>
 							<span class="depth-value">100+ km</span>
 						</div>
+						<div class="magnitude-range">
+							<span class="magnitude-label">Magnitude Range</span>
+							<span class="magnitude-value">5.5 - 7.5+</span>
+						</div>
 						<p class="card-description">
-							Deep earthquakes are represented by rich accordion tones. These profound events appear as golden yellow colors and originate from the deepest crustal layers.
+							Deep earthquakes are represented by rich accordion tones. These profound events appear as golden yellow colors and originate from the deepest crustal layers. <strong>Volume increases with earthquake magnitude.</strong>
 						</p>
 						<div class="color-indicator accordion-color"></div>
 					</div>
@@ -137,8 +149,12 @@
 							<span class="depth-label">Magnitude</span>
 							<span class="depth-value">8.0+</span>
 						</div>
+						<div class="magnitude-range">
+							<span class="magnitude-label">Volume Range</span>
+							<span class="magnitude-value">Very Loud</span>
+						</div>
 						<p class="card-description">
-							Catastrophic earthquakes (magnitude 8+) trigger powerful percussion sounds regardless of depth. These rare, devastating events appear as bright cream-colored bursts.
+							Catastrophic earthquakes (magnitude 8+) trigger powerful percussion sounds regardless of depth. These rare, devastating events appear as bright cream-colored bursts. <strong>Maximum volume for catastrophic events.</strong>
 						</p>
 						<div class="color-indicator percussion-color"></div>
 					</div>
@@ -148,8 +164,8 @@
 			<div class="mapping-info">
 				<div class="info-grid">
 					<div class="info-item">
-						<h4>Volume Mapping</h4>
-						<p>Sound volume corresponds to earthquake magnitude - stronger earthquakes produce louder sounds.</p>
+						<h4>Volume & Magnitude Mapping</h4>
+						<p>Sound volume directly corresponds to earthquake magnitude (5.5-7.5+). Stronger earthquakes produce louder sounds, with catastrophic events (8.0+) triggering maximum volume percussion.</p>
 					</div>
 					<div class="info-item">
 						<h4>Visual Layers</h4>
@@ -364,7 +380,7 @@
 	/* Instruments Grid */
 	.instruments-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		grid-template-columns: repeat(2, 1fr);
 		gap: 2rem;
 		margin-bottom: 4rem;
 	}
@@ -423,20 +439,32 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		margin-bottom: 0.75rem;
+		padding: 0.75rem 1rem;
+		background: #f8f9fa;
+		border-radius: 4px;
+	}
+
+	.magnitude-range {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 		margin-bottom: 1rem;
 		padding: 0.75rem 1rem;
 		background: #f8f9fa;
 		border-radius: 4px;
 	}
 
-	.depth-label {
+	.depth-label,
+	.magnitude-label {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 0.85rem;
 		color: #6b7280;
 		font-weight: 500;
 	}
 
-	.depth-value {
+	.depth-value,
+	.magnitude-value {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 0.9rem;
 		color: #1a1a1a;
@@ -521,6 +549,13 @@
 	}
 
 	/* Responsive Design */
+	@media (max-width: 1024px) {
+		.instruments-grid {
+			grid-template-columns: repeat(2, 1fr);
+			gap: 1.5rem;
+		}
+	}
+
 	@media (max-width: 768px) {
 		.hero-section {
 			padding: 1rem;
