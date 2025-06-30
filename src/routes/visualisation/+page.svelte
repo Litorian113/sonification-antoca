@@ -43,42 +43,59 @@
 	// New Sound mapping: Depth determines instrument, Magnitude determines pitch and volume
 	const getSoundFile = (magnitude: number, depth: number): string => {
 		if (depth > 100) {
-			// Depth > 100: Accordion (RED) - 6 tones between 5.0-7.9
+			// Depth > 100: Accordion (RED) - 6 tones between 5.5-7.5
 			if (magnitude >= 7.5) return "/accordion/g2.wav";
 			else if (magnitude >= 7.0) return "/accordion/f2.wav";
 			else if (magnitude >= 6.5) return "/accordion/e2.wav";
 			else if (magnitude >= 6.0) return "/accordion/d2.wav";
-			else if (magnitude >= 5.5) return "/accordion/c2.wav";
-			else if (magnitude >= 5.0) return "/accordion/b2.wav";
-			else return "/accordion/a2.wav"; // fallback for < 5.0
+			else if (magnitude >= 5.8) return "/accordion/c2.wav";
+			else if (magnitude >= 5.5) return "/accordion/b2.wav";
+			else return "/accordion/a2.wav"; // fallback for < 5.5
 		} else if (depth >= 30) {
-			// Depth 30-100: Piano (YELLOW) - 6 tones between 5.0-7.9
+			// Depth 30-100: Piano (YELLOW) - 6 tones between 5.5-7.5
 			if (magnitude >= 7.5) return "/piano/C1.wav";
 			else if (magnitude >= 7.0) return "/piano/E1.wav";
 			else if (magnitude >= 6.5) return "/piano/G1.wav";
 			else if (magnitude >= 6.0) return "/piano/C2.wav";
-			else if (magnitude >= 5.5) return "/piano/E2.wav";
-			else if (magnitude >= 5.0) return "/piano/C3.wav";
-			else return "/piano/G4.wav"; // fallback for < 5.0
+			else if (magnitude >= 5.8) return "/piano/E2.wav";
+			else if (magnitude >= 5.5) return "/piano/C3.wav";
+			else return "/piano/G4.wav"; // fallback for < 5.5
 		} else {
-			// Depth 0-30: Violin (BLUE) - 6 tones between 5.0-7.9
+			// Depth 0-30: Violin (BLUE) - 6 tones between 5.5-7.5
 			if (magnitude >= 7.5) return "/violin/g3.wav";
 			else if (magnitude >= 7.0) return "/violin/c4.wav";
 			else if (magnitude >= 6.5) return "/violin/e4.wav";
 			else if (magnitude >= 6.0) return "/violin/g4.wav";
-			else if (magnitude >= 5.5) return "/violin/a5.wav";
-			else if (magnitude >= 5.0) return "/violin/a6.wav";
-			else return "/violin/a6.wav"; // fallback for < 5.0
+			else if (magnitude >= 5.8) return "/violin/a5.wav";
+			else if (magnitude >= 5.5) return "/violin/a6.wav";
+			else return "/violin/a6.wav"; // fallback for < 5.5
 		}
 	};
 
-	// Calculate volume based on magnitude (0.1 to 1.0)
+	// Calculate volume based on magnitude (0.3 to 1.0)
 	const getVolumeForMagnitude = (
 		magnitude: number,
 		depth: number,
 	): number => {
-		// Return constant volume for all earthquakes
-		return 0.7;
+		// Map magnitude 5.5 (quietest) to 7.5 (loudest) linearly to volume 0.3 to 1.0
+		const minMagnitude = 5.5;
+		const maxMagnitude = 7.5;
+		const minVolume = 0.01;
+		const maxVolume = 3.0;
+
+		// Clamp magnitude to the range [5.5, 7.5]
+		const clampedMagnitude = Math.max(
+			minMagnitude,
+			Math.min(maxMagnitude, magnitude),
+		);
+
+		// Linear interpolation
+		const volumeRange = maxVolume - minVolume;
+		const magnitudeRange = maxMagnitude - minMagnitude;
+		const normalizedMagnitude =
+			(clampedMagnitude - minMagnitude) / magnitudeRange;
+
+		return minVolume + normalizedMagnitude * volumeRange;
 	};
 
 	// Get percussion sound for magnitude 8+ events
