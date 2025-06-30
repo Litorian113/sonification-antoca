@@ -6,7 +6,7 @@
 	let container: HTMLElement;
 	let isPlaying = false;
 	let currentIndex = 0;
-	let animationSpeed = 50; // milliseconds between earthquakes
+	let animationSpeed = 150; // milliseconds between earthquakes
 	let globe: THREE.Mesh;
 	let scene: THREE.Scene;
 	let camera: THREE.PerspectiveCamera;
@@ -16,13 +16,13 @@
 	let persistentDots: THREE.Mesh[] = []; // For persistent earthquake points
 	let audioContext: AudioContext;
 	let playButton: HTMLButtonElement;
-	
+
 	// Globe rotation settings
 	let globeRotationSpeed = 0.01; // Rotation speed for globes
 	let isGlobeRotating = true; // Enable/disable globe rotation
 	let gridGroup: THREE.Group; // Reference to the grid lines
 	let persistentDotsGroup: THREE.Group; // Reference to persistent dots group
-	
+
 	//Test Commit
 	// Performance optimization: Pre-load audio buffers
 	const audioBuffers = new Map<string, AudioBuffer>();
@@ -43,44 +43,46 @@
 	// New Sound mapping: Depth determines instrument, Magnitude determines pitch and volume
 	const getSoundFile = (magnitude: number, depth: number): string => {
 		if (depth > 100) {
-			// Depth > 100: Accordion (RED) - g2 (weakest) to a2 (strongest)
-			if (magnitude >= 7.0) return "/accordion/a2.wav";
-			else if (magnitude >= 6.0) return "/accordion/b2.wav";
-			else if (magnitude >= 5.0) return "/accordion/c2.wav";
+			// Depth > 100: Accordion (RED) - g2 (strongest) to a2 (weakest)
+			if (magnitude >= 7.0) return "/accordion/g2.wav";
+			else if (magnitude >= 6.0) return "/accordion/f2.wav";
+			else if (magnitude >= 5.0) return "/accordion/e2.wav";
 			else if (magnitude >= 4.0) return "/accordion/d2.wav";
-			else if (magnitude >= 3.0) return "/accordion/e2.wav";
-			else if (magnitude >= 2.0) return "/accordion/f2.wav";
-			else return "/accordion/g2.wav";
+			else if (magnitude >= 3.0) return "/accordion/c2.wav";
+			else if (magnitude >= 2.0) return "/accordion/b2.wav";
+			else return "/accordion/a2.wav";
 		} else if (depth >= 30) {
-			// Depth 30-100: Piano (YELLOW) - C1 (weakest) to G4 (strongest)
-			if (magnitude >= 7.0) return "/piano/G4.wav";
-			else if (magnitude >= 6.0) return "/piano/E4.wav";
-			else if (magnitude >= 5.0) return "/piano/C3.wav";
-			else if (magnitude >= 4.0) return "/piano/G1.wav";
-			else if (magnitude >= 3.0) return "/piano/E1.wav";
-			else return "/piano/C1.wav";
+			// Depth 30-100: Piano (YELLOW) - C1 (strongest) to G4 (weakest)
+			if (magnitude >= 7.0) return "/piano/C1.wav";
+			else if (magnitude >= 6.0) return "/piano/E1.wav";
+			else if (magnitude >= 5.0) return "/piano/G1.wav";
+			else if (magnitude >= 4.0) return "/piano/C3.wav";
+			else if (magnitude >= 3.0) return "/piano/E4.wav";
+			else return "/piano/G4.wav";
 		} else {
-			// Depth 0-30: Violin (BLUE) - g3 (weakest) to a6 (strongest)
-			if (magnitude >= 7.0) return "/violin/a6.wav";
-			else if (magnitude >= 6.0) return "/violin/a5.wav";
-			else if (magnitude >= 5.0) return "/violin/g4.wav";
-			else if (magnitude >= 4.0) return "/violin/e4.wav";
-			else if (magnitude >= 3.0) return "/violin/c4.wav";
-			else return "/violin/g3.wav";
+			// Depth 0-30: Violin (BLUE) - g3 (strongest) to a6 (weakest)
+			if (magnitude >= 7.0) return "/violin/g3.wav";
+			else if (magnitude >= 6.0) return "/violin/c4.wav";
+			else if (magnitude >= 5.0) return "/violin/e4.wav";
+			else if (magnitude >= 4.0) return "/violin/g4.wav";
+			else if (magnitude >= 3.0) return "/violin/a5.wav";
+			else return "/violin/a6.wav";
 		}
 	};
 
 	// Calculate volume based on magnitude (0.1 to 1.0)
-	const getVolumeForMagnitude = (magnitude: number, depth: number): number => {
-		// Base volume scaling: 1.0-9.0 -> 0.1-1.0
-		let volume = Math.max(0.1, Math.min(1.0, (magnitude - 1.0) / 8.0));
-		
+	const getVolumeForMagnitude = (
+		magnitude: number,
+		depth: number,
+	): number => {
+		// Exponential scaling for more contrast
+		let volume =
+			Math.pow(Math.max(0, (magnitude - 1) / 8), 1.5) * 0.9 + 0.1;
 		// Reduce accordion volume (depth > 100) as they are more dominant
 		if (depth > 100) {
-			volume *= 0.6; // Reduce accordion volume by 40%
+			volume *= 0.6;
 		}
-		
-		return volume;
+		return Math.max(0.1, Math.min(1.0, volume));
 	};
 
 	// Get percussion sound for magnitude 8+ events
@@ -89,12 +91,15 @@
 	};
 
 	// Color mapping based on new depth ranges and instruments
-	const getColorForSound = (magnitude: number, depth: number): THREE.Color => {
+	const getColorForSound = (
+		magnitude: number,
+		depth: number,
+	): THREE.Color => {
 		// Special color for magnitude 8+ events (catastrophic earthquakes)
 		if (magnitude >= 8.0) {
 			return new THREE.Color(0x00ff44); // Bright green for catastrophic events
 		}
-		
+
 		if (depth > 100) {
 			// Depth > 100: Accordion - RED
 			return new THREE.Color(0xff4444);
@@ -131,13 +136,13 @@
 			const audioFiles = [
 				// Accordion sounds
 				"/accordion/g2.wav",
-				"/accordion/f2.wav", 
+				"/accordion/f2.wav",
 				"/accordion/e2.wav",
 				"/accordion/d2.wav",
 				"/accordion/c2.wav",
 				"/accordion/b2.wav",
 				"/accordion/a2.wav",
-				
+
 				// Piano sounds
 				"/piano/C1.wav",
 				"/piano/E1.wav",
@@ -145,7 +150,7 @@
 				"/piano/C3.wav",
 				"/piano/E4.wav",
 				"/piano/G4.wav",
-				
+
 				// Violin sounds
 				"/violin/g3.wav",
 				"/violin/c4.wav",
@@ -153,9 +158,9 @@
 				"/violin/g4.wav",
 				"/violin/a5.wav",
 				"/violin/a6.wav",
-				
+
 				// Percussion sounds for magnitude 8+ events
-				"/percussion/b5.wav"
+				"/percussion/b5.wav",
 			];
 
 			const loadPromises = audioFiles.map(async (file) => {
@@ -177,23 +182,30 @@
 			console.error("Audio preloading failed:", error);
 		}
 	};
-	const playSound = async (soundFile: string, magnitude: number, depth: number) => {
+	const playSound = async (
+		soundFile: string,
+		magnitude: number,
+		depth: number,
+	) => {
+		const instrument = getInstrumentByDepth(depth);
+		if (!instrumentEnabled[instrument]) return; // Filtered out
+
 		try {
 			if (!audioContext) {
 				audioContext = new AudioContext();
 			}
 
 			const volume = getVolumeForMagnitude(magnitude, depth);
-			
+
 			// Use preloaded buffer if available
 			const audioBuffer = audioBuffers.get(soundFile);
 			if (audioBuffer) {
 				const source = audioContext.createBufferSource();
 				const gainNode = audioContext.createGain();
-				
+
 				source.buffer = audioBuffer;
 				gainNode.gain.value = volume;
-				
+
 				source.connect(gainNode);
 				gainNode.connect(audioContext.destination);
 				source.start();
@@ -203,14 +215,15 @@
 			// Fallback to dynamic loading
 			const response = await fetch(soundFile);
 			const arrayBuffer = await response.arrayBuffer();
-			const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+			const decodedBuffer =
+				await audioContext.decodeAudioData(arrayBuffer);
 
 			const source = audioContext.createBufferSource();
 			const gainNode = audioContext.createGain();
-			
+
 			source.buffer = decodedBuffer;
 			gainNode.gain.value = volume;
-			
+
 			source.connect(gainNode);
 			gainNode.connect(audioContext.destination);
 			source.start();
@@ -221,6 +234,14 @@
 
 	// Play percussion sound for catastrophic earthquakes (magnitude 8+)
 	const playPercussionSound = async (magnitude: number) => {
+		// Percussion always plays if any instrument is enabled (or you can add a separate toggle)
+		if (
+			!instrumentEnabled.accordion &&
+			!instrumentEnabled.piano &&
+			!instrumentEnabled.violin
+		)
+			return;
+
 		try {
 			if (!audioContext) {
 				audioContext = new AudioContext();
@@ -228,17 +249,20 @@
 
 			const percussionFile = getPercussionSound();
 			// Use higher volume for catastrophic events (0.8-1.0)
-			const volume = Math.max(0.8, Math.min(1.0, (magnitude - 7.0) / 2.0));
-			
+			const volume = Math.max(
+				0.8,
+				Math.min(1.0, (magnitude - 7.0) / 2.0),
+			);
+
 			// Use preloaded buffer if available
 			const audioBuffer = audioBuffers.get(percussionFile);
 			if (audioBuffer) {
 				const source = audioContext.createBufferSource();
 				const gainNode = audioContext.createGain();
-				
+
 				source.buffer = audioBuffer;
 				gainNode.gain.value = volume;
-				
+
 				source.connect(gainNode);
 				gainNode.connect(audioContext.destination);
 				source.start();
@@ -248,14 +272,15 @@
 			// Fallback to dynamic loading
 			const response = await fetch(percussionFile);
 			const arrayBuffer = await response.arrayBuffer();
-			const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer);
+			const decodedBuffer =
+				await audioContext.decodeAudioData(arrayBuffer);
 
 			const source = audioContext.createBufferSource();
 			const gainNode = audioContext.createGain();
-			
+
 			source.buffer = decodedBuffer;
 			gainNode.gain.value = volume;
-			
+
 			source.connect(gainNode);
 			gainNode.connect(audioContext.destination);
 			source.start();
@@ -267,25 +292,32 @@
 	const createShockwave = (magnitude: number, depth: number) => {
 		// Get the appropriate globe radius for this depth
 		const globeRadius = getGlobeRadius(depth);
-		
+
 		// Calculate magnitude-based parameters for realistic earthquake scaling
 		// Earthquake magnitude scale is logarithmic, so we need to scale accordingly
 		const getMaxRadiusForMagnitude = (mag: number): number => {
 			// Scale based on realistic earthquake impact zones
 			// Magnitude 1-2: Very local (0.3-0.5)
-			// Magnitude 3-4: Local (0.6-1.0) 
+			// Magnitude 3-4: Local (0.6-1.0)
 			// Magnitude 5-6: Regional (1.2-1.8)
 			// Magnitude 7+: Major/Great (2.0-3.0)
-			if (mag >= 8.0) return 3.0;        // Great earthquake
-			else if (mag >= 7.0) return 2.4;   // Major earthquake 
-			else if (mag >= 6.0) return 1.8;   // Strong earthquake
-			else if (mag >= 5.0) return 1.2;   // Moderate earthquake
-			else if (mag >= 4.0) return 0.8;   // Light earthquake
-			else if (mag >= 3.0) return 0.6;   // Minor earthquake
-			else if (mag >= 2.0) return 0.4;   // Micro earthquake
-			else return 0.3;                   // Very minor earthquake
+			if (mag >= 8.0)
+				return 3.0; // Great earthquake
+			else if (mag >= 7.0)
+				return 2.4; // Major earthquake
+			else if (mag >= 6.0)
+				return 1.8; // Strong earthquake
+			else if (mag >= 5.0)
+				return 1.2; // Moderate earthquake
+			else if (mag >= 4.0)
+				return 0.8; // Light earthquake
+			else if (mag >= 3.0)
+				return 0.6; // Minor earthquake
+			else if (mag >= 2.0)
+				return 0.4; // Micro earthquake
+			else return 0.3; // Very minor earthquake
 		};
-		
+
 		const getRingWidthForMagnitude = (mag: number): number => {
 			// Stronger earthquakes have wider shock fronts
 			// Scale from 0.02 (very thin) to 0.08 (thick)
@@ -293,7 +325,7 @@
 			const widthMultiplier = Math.pow(2, (mag - 2.0) / 2.0); // Exponential scaling
 			return Math.min(0.08, baseWidth * widthMultiplier);
 		};
-		
+
 		const getDurationForMagnitude = (mag: number): number => {
 			// Stronger earthquakes have longer-lasting effects
 			// Scale from 1500ms (weak) to 4000ms (very strong)
@@ -301,11 +333,11 @@
 			const durationMultiplier = Math.pow(1.5, mag - 2.0);
 			return Math.min(4000, baseDuration * durationMultiplier);
 		};
-		
+
 		const maxRadius = getMaxRadiusForMagnitude(magnitude);
 		const ringWidth = getRingWidthForMagnitude(magnitude);
 		const duration = getDurationForMagnitude(magnitude);
-		
+
 		// Create geometry sized for the specific depth layer
 		const shockwaveGeometry = new THREE.SphereGeometry(
 			globeRadius + 0.02,
@@ -386,10 +418,7 @@
 			blending: THREE.AdditiveBlending,
 		});
 
-		const shockwave = new THREE.Mesh(
-			shockwaveGeometry,
-			shaderMaterial,
-		);
+		const shockwave = new THREE.Mesh(shockwaveGeometry, shaderMaterial);
 
 		// Store animation properties
 		shockwave.userData = {
@@ -403,10 +432,14 @@
 	};
 
 	// Create special green shockwave for catastrophic earthquakes (magnitude 8+)
-	const createCatastrophicShockwave = (magnitude: number, lat: number, lon: number) => {
+	const createCatastrophicShockwave = (
+		magnitude: number,
+		lat: number,
+		lon: number,
+	) => {
 		// Always use outer globe for maximum visual impact
 		const globeRadius = 7.0;
-		
+
 		// Create geometry for outer globe
 		const shockwaveGeometry = new THREE.SphereGeometry(
 			globeRadius + 0.05, // Slightly larger for prominence
@@ -420,7 +453,7 @@
 
 		// Bright green color for catastrophic events
 		const greenColor = new THREE.Color(0x00ff44);
-		
+
 		// Impact radius for catastrophic events - smaller than before
 		const maxRadius = 2.2; // Reasonable size for magnitude 8+ events
 		const ringWidth = 0.08; // Slightly thinner ring
@@ -495,7 +528,7 @@
 		});
 
 		const shockwave = new THREE.Mesh(shockwaveGeometry, shaderMaterial);
-		
+
 		// Convert lat/lon to epicenter position
 		const phi = (90 - lat) * (Math.PI / 180);
 		const theta = (lon + 180) * (Math.PI / 180);
@@ -503,9 +536,12 @@
 		const z = globeRadius * Math.sin(phi) * Math.sin(theta);
 		const y = globeRadius * Math.cos(phi);
 		const epicenterPosition = new THREE.Vector3(x, y, z);
-		
+
 		// Set epicenter position in shader
-		shaderMaterial.uniforms.epicenter.value = epicenterPosition.clone().normalize().multiplyScalar(globeRadius);
+		shaderMaterial.uniforms.epicenter.value = epicenterPosition
+			.clone()
+			.normalize()
+			.multiplyScalar(globeRadius);
 
 		// Store animation properties
 		shockwave.userData = {
@@ -522,20 +558,30 @@
 		const lat = quake.Latitude;
 		const lon = quake.Longitude;
 		const magnitude = quake.Magnitude;
+		const depth = quake.Depth;
+
+		const instrument = getInstrumentByDepth(depth);
+
+		// Only show shockwave/ring if instrument is enabled
+		if (!instrumentEnabled[instrument]) {
+			// Still create persistent dot (it will be hidden by filter)
+			createPersistentDot(lat, lon, magnitude, depth);
+			return;
+		}
 
 		// Convert lat/lon to 3D coordinates on sphere surface
 		const phi = (90 - lat) * (Math.PI / 180);
 		const theta = (lon + 180) * (Math.PI / 180);
-		
+
 		// Get the appropriate globe radius for this depth
-		const globeRadius = getGlobeRadius(quake.Depth);
+		const globeRadius = getGlobeRadius(depth);
 
 		const x = -(globeRadius * Math.sin(phi) * Math.cos(theta));
 		const z = globeRadius * Math.sin(phi) * Math.sin(theta);
 		const y = globeRadius * Math.cos(phi);
 
 		const epicenterPosition = new THREE.Vector3(x, y, z);
-		const shockwave = createShockwave(magnitude, quake.Depth);
+		const shockwave = createShockwave(magnitude, depth);
 
 		// Set the epicenter position in the shader (normalized for the specific globe size)
 		shockwave.userData.material.uniforms.epicenter.value = epicenterPosition
@@ -548,20 +594,25 @@
 
 		scene.add(shockwave);
 		earthquakeDots.push(shockwave);
+
 		// Create persistent dot at earthquake epicenter
-		createPersistentDot(lat, lon, magnitude, quake.Depth);
+		createPersistentDot(lat, lon, magnitude, depth);
 
 		// Play sound with volume based on magnitude
-		const soundFile = getSoundFile(magnitude, quake.Depth);
-		playSound(soundFile, magnitude, quake.Depth);
+		const soundFile = getSoundFile(magnitude, depth);
+		playSound(soundFile, magnitude, depth);
 
 		// For catastrophic earthquakes (magnitude 8+), add additional effects
 		if (magnitude >= 8.0) {
 			// Play percussion sound
 			playPercussionSound(magnitude);
-			
+
 			// Create additional green shockwave on outer globe for visual impact
-			const greenShockwave = createCatastrophicShockwave(magnitude, lat, lon);
+			const greenShockwave = createCatastrophicShockwave(
+				magnitude,
+				lat,
+				lon,
+			);
 			greenShockwave.position.set(0, 0, 0);
 			scene.add(greenShockwave);
 			earthquakeDots.push(greenShockwave);
@@ -629,7 +680,6 @@
 
 		isPlaying = true;
 		hasPlayed = true;
-		// Do NOT reset currentYear or currentIndex here, so it resumes from where it left off
 		clearDots();
 
 		const playNext = () => {
@@ -644,7 +694,10 @@
 			// Set currentYear from quake.Date
 			if (quake.Date) {
 				const year = new Date(quake.Date).getFullYear();
-				if (!isNaN(year)) currentYear = year;
+				if (!isNaN(year)) {
+					currentYear = year;
+					selectedYear = year; // <-- Add this line to sync the slider
+				}
 			}
 
 			currentIndex++;
@@ -712,8 +765,42 @@
 		return gridGroup; // Return reference for rotation
 	}
 
+	// Instrument filter state
+	let instrumentEnabled = {
+		accordion: true,
+		piano: true,
+		violin: true,
+	};
+
+	function toggleInstrument(inst: "accordion" | "piano" | "violin") {
+		instrumentEnabled[inst] = !instrumentEnabled[inst];
+		updatePersistentDotVisibility();
+	}
+
+	// Helper to get instrument from depth
+	function getInstrumentByDepth(
+		depth: number,
+	): "accordion" | "piano" | "violin" {
+		if (depth > 100) return "accordion";
+		if (depth >= 30) return "piano";
+		return "violin";
+	}
+
+	// Update dot visibility based on instrument filter
+	function updatePersistentDotVisibility() {
+		for (const dot of persistentDots) {
+			const instrument = dot.userData.instrument;
+			dot.visible = instrumentEnabled[instrument];
+		}
+	}
+
 	// Create persistent dots for earthquake epicenters
-	function createPersistentDot(lat: number, lng: number, magnitude: number, depth: number) {
+	function createPersistentDot(
+		lat: number,
+		lng: number,
+		magnitude: number,
+		depth: number,
+	) {
 		const phi = (90 - lat) * (Math.PI / 180);
 		const theta = (lng + 180) * (Math.PI / 180);
 
@@ -732,15 +819,61 @@
 		const dot = new THREE.Mesh(dotGeometry, dotMaterial);
 
 		// Position on outer globe surface (always at 7.05 regardless of depth)
-		// This ensures all dots are visible on the surface while shockwaves occur at depth
 		const outerRadius = 7.05;
 		const x = -(Math.sin(phi) * Math.cos(theta) * outerRadius);
 		const z = Math.sin(phi) * Math.sin(theta) * outerRadius;
 		const y = Math.cos(phi) * outerRadius;
 
 		dot.position.set(x, y, z);
+
+		// Store instrument info for filtering
+		dot.userData.instrument = getInstrumentByDepth(depth);
+
+		// Set initial visibility
+		dot.visible = instrumentEnabled[dot.userData.instrument];
+
 		persistentDotsGroup.add(dot);
 		persistentDots.push(dot);
+	}
+
+	// Animation control
+	let animationRequestId: number | null = null;
+
+	function startAnimation() {
+		if (animationRequestId !== null) return;
+
+		let startTime: number | null = null;
+
+		const animate = (currentTime: number) => {
+			if (startTime === null) startTime = currentTime;
+
+			const elapsed = currentTime - startTime;
+			const progress = elapsed / 1000; // Normalize to [0, 1] range
+
+			// Update shockwave animations
+			for (const shockwave of earthquakeDots) {
+				const userData = shockwave.userData;
+				const phase = (progress + userData.magnitude * 0.1) % 1.0; // Offset by magnitude
+				userData.material.uniforms.time.value = phase;
+			}
+
+			renderer.render(scene, camera);
+
+			if (progress < 1.0) {
+				animationRequestId = requestAnimationFrame(animate);
+			} else {
+				animationRequestId = null;
+			}
+		};
+
+		animationRequestId = requestAnimationFrame(animate);
+	}
+
+	function stopAnimationRequest() {
+		if (animationRequestId !== null) {
+			cancelAnimationFrame(animationRequestId);
+			animationRequestId = null;
+		}
 	}
 
 	onMount(() => {
@@ -811,18 +944,22 @@
 						if (gridGroup) {
 							gridGroup.rotation.y += globeRotationSpeed;
 						}
-						
+
 						// Rotate persistent dots group
 						if (persistentDotsGroup) {
-							persistentDotsGroup.rotation.y += globeRotationSpeed;
+							persistentDotsGroup.rotation.y +=
+								globeRotationSpeed;
 						}
-						
+
 						// Rotate all shockwaves
-						earthquakeDots.forEach(shockwave => {
-							shockwave.rotateOnWorldAxis(new THREE.Vector3(0, 1, 0), globeRotationSpeed);
+						earthquakeDots.forEach((shockwave) => {
+							shockwave.rotateOnWorldAxis(
+								new THREE.Vector3(0, 1, 0),
+								globeRotationSpeed,
+							);
 						});
 					}
-					
+
 					controls.update();
 					updateShockwaves(); // Update shockwave animations
 					renderer.render(scene, camera);
@@ -832,11 +969,11 @@
 			animate(0);
 
 			// Preload earthquake data on startup with date filtering (2010-2016)
-			const startDate = new Date('2010-01-01');
-			const endDate = new Date('2016-12-30');
-			
+			const startDate = new Date("2010-01-01");
+			const endDate = new Date("2016-12-30");
+
 			sortedEarthquakeData = [...earthquakeData]
-				.filter(quake => {
+				.filter((quake) => {
 					const quakeDate = new Date(quake.Date);
 					return quakeDate >= startDate && quakeDate <= endDate;
 				})
@@ -845,8 +982,10 @@
 					const dateB = new Date(b.Date);
 					return dateA.getTime() - dateB.getTime();
 				});
-			
-			console.log(`Loaded ${sortedEarthquakeData.length} earthquakes from 2010-2016`);
+
+			console.log(
+				`Loaded ${sortedEarthquakeData.length} earthquakes from 2010-2016`,
+			);
 
 			// Preload audio files asynchronously
 			preloadAudio();
@@ -876,6 +1015,45 @@
 			renderer?.dispose();
 		};
 	});
+
+	// Compute available years from sortedEarthquakeData
+	let minYear = 2010;
+	let maxYear = 2016;
+	$: {
+		if (sortedEarthquakeData.length > 0) {
+			minYear = new Date(sortedEarthquakeData[0].Date).getFullYear();
+			maxYear = new Date(
+				sortedEarthquakeData[sortedEarthquakeData.length - 1].Date,
+			).getFullYear();
+		}
+	}
+	let selectedYear: number = minYear;
+
+	// Jump to the first earthquake of the selected year
+	function jumpToYear(year: number) {
+		selectedYear = year;
+		currentYear = year;
+		// Find the first earthquake of the selected year
+		const idx = sortedEarthquakeData.findIndex(
+			(q) => new Date(q.Date).getFullYear() === year,
+		);
+		if (idx !== -1) {
+			currentIndex = idx;
+			clearDots();
+			clearPersistentDots();
+			// Replay all earthquakes up to this year for persistent dots
+			for (let i = 0; i <= idx; i++) {
+				const quake = sortedEarthquakeData[i];
+				createPersistentDot(
+					quake.Latitude,
+					quake.Longitude,
+					quake.Magnitude,
+					quake.Depth,
+				);
+			}
+			updatePersistentDotVisibility();
+		}
+	}
 </script>
 
 <div class="container">
@@ -893,7 +1071,7 @@
 
 		<button
 			class="rotation-btn"
-			on:click={() => isGlobeRotating = !isGlobeRotating}
+			on:click={() => (isGlobeRotating = !isGlobeRotating)}
 		>
 			{isGlobeRotating ? "Stop Globe Rotation" : "Start Globe Rotation"}
 		</button>
@@ -914,24 +1092,50 @@
 				min="10"
 				max="500"
 				bind:value={animationSpeed}
-				disabled={isPlaying}
 			/>
 			<span>{animationSpeed}ms</span>
 		</div>
 		<div class="info">
 			<div class="legend">
 				<h4>3D Depth Visualization:</h4>
-				<div class="legend-item">
+				<div
+					class="legend-item clickable {instrumentEnabled.accordion
+						? ''
+						: 'disabled'}"
+					on:click={() => toggleInstrument("accordion")}
+				>
 					<div class="color-dot red"></div>
-					<span>>100m: Inner Globe (Red) - Accordion</span>
+					<span
+						>>100m: Inner Globe (Red) - Accordion {instrumentEnabled.accordion
+							? ""
+							: "(Muted)"}</span
+					>
 				</div>
-				<div class="legend-item">
+				<div
+					class="legend-item clickable {instrumentEnabled.piano
+						? ''
+						: 'disabled'}"
+					on:click={() => toggleInstrument("piano")}
+				>
 					<div class="color-dot yellow"></div>
-					<span>30-100m: Middle Globe (Yellow) - Piano</span>
+					<span
+						>30-100m: Middle Globe (Yellow) - Piano {instrumentEnabled.piano
+							? ""
+							: "(Muted)"}</span
+					>
 				</div>
-				<div class="legend-item">
+				<div
+					class="legend-item clickable {instrumentEnabled.violin
+						? ''
+						: 'disabled'}"
+					on:click={() => toggleInstrument("violin")}
+				>
 					<div class="color-dot blue"></div>
-					<span>0-30m: Outer Globe (Blue) - Violin</span>
+					<span
+						>0-30m: Outer Globe (Blue) - Violin {instrumentEnabled.violin
+							? ""
+							: "(Muted)"}</span
+					>
 				</div>
 
 				<h4>Visual Elements:</h4>
@@ -944,12 +1148,12 @@
 
 				<h4>Magnitude → Pitch & Volume:</h4>
 				<div class="legend-item">
-					<span>Higher magnitude = Higher pitch + Louder</span>
+					<span>Higher magnitude = Lower pitch + Louder</span>
 				</div>
 				<div class="legend-item">
-					<span>Lower magnitude = Lower pitch + Quieter</span>
+					<span>Lower magnitude = Higher pitch + Quieter</span>
 				</div>
-				
+
 				<h4>Data Range:</h4>
 				<div class="legend-item">
 					<span>2010 - 2016 Earthquakes</span>
@@ -961,6 +1165,17 @@
 	{#if (isPlaying && currentYear) || (!isPlaying && hasPlayed && currentYear)}
 		<div class="year-counter">
 			<span class="year-value">{currentYear}</span>
+			<!-- Year slider and input -->
+			<div class="year-slider-row">
+				<input
+					type="range"
+					min={minYear}
+					max={maxYear}
+					bind:value={selectedYear}
+					on:input={() => jumpToYear(selectedYear)}
+					class="year-slider"
+				/>
+			</div>
 		</div>
 	{/if}
 </div>
@@ -1056,7 +1271,7 @@
 	.rotation-btn {
 		padding: 12px 24px;
 		font-size: 14px;
-		background: linear-gradient(135deg, #4CAF50, #45a049, #66bb6a);
+		background: linear-gradient(135deg, #4caf50, #45a049, #66bb6a);
 		background-size: 200% 200%;
 		color: white;
 		border: none;
@@ -1070,7 +1285,7 @@
 	}
 
 	.rotation-btn:hover {
-		background: linear-gradient(135deg, #45a049, #4CAF50);
+		background: linear-gradient(135deg, #45a049, #4caf50);
 		transform: translateY(-2px);
 		box-shadow: 0 10px 25px rgba(76, 175, 80, 0.3);
 	}
@@ -1260,6 +1475,45 @@
 		line-height: 1;
 	}
 
+	.year-slider-row {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+		margin-top: 14px;
+	}
+
+	.year-slider {
+		width: 220px;
+		height: 6px;
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 3px;
+		outline: none;
+		-webkit-appearance: none;
+		appearance: none;
+	}
+	.year-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 18px;
+		height: 18px;
+		background: linear-gradient(45deg, #64ffda, #00bcd4);
+		border-radius: 50%;
+		cursor: pointer;
+		box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
+	}
+	.year-slider::-moz-range-thumb {
+		width: 18px;
+		height: 18px;
+		background: linear-gradient(45deg, #64ffda, #00bcd4);
+		border-radius: 50%;
+		cursor: pointer;
+		border: none;
+		box-shadow: 0 0 10px rgba(100, 255, 218, 0.5);
+	}
+	.year-slider:focus {
+		outline: none;
+	}
+
 	@media (max-width: 768px) {
 		.controls {
 			top: 10px;
@@ -1286,5 +1540,19 @@
 		.year-value {
 			font-size: 1.2rem;
 		}
+	}
+
+	.legend-item.clickable {
+		cursor: pointer;
+		transition:
+			background 0.2s,
+			opacity 0.2s;
+	}
+	.legend-item.clickable:hover {
+		background: rgba(100, 255, 218, 0.08);
+	}
+	.legend-item.disabled {
+		opacity: 0.4;
+		text-decoration: line-through;
 	}
 </style>
