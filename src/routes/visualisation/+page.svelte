@@ -901,13 +901,9 @@
 			// Handle both TopoJSON and GeoJSON formats
 			let features;
 			if (geoData.type === 'Topology' && geoData.objects) {
-				// TopoJSON format (Natural Earth)
-				if (typeof topojson !== 'undefined') {
-					features = topojson.feature(geoData, geoData.objects.countries || geoData.objects.world).features;
-				} else {
-					console.warn("TopoJSON library not available, skipping this source");
-					return null;
-				}
+				// TopoJSON format (Natural Earth) - try to handle without topojson library
+				console.warn("TopoJSON format detected but library not available, trying GeoJSON fallback");
+				return null;
 			} else if (geoData.type === 'FeatureCollection') {
 				// GeoJSON format
 				features = geoData.features;
@@ -1026,7 +1022,7 @@
 			}
 			
 			if (svgContent) {
-				const texture = createTextureFromSVG(svgContent);
+				const texture = await createTextureFromSVG(svgContent);
 				
 				if (texture) {
 					const bordersGeometry = new THREE.SphereGeometry(7.01, 128, 128);
@@ -1086,7 +1082,7 @@
 	}
 
 	// Create texture from SVG content
-	function createTextureFromSVG(svgContent: string): THREE.Texture | null {
+	async function createTextureFromSVG(svgContent: string): Promise<THREE.Texture | null> {
 		try {
 			const canvas = document.createElement('canvas');
 			canvas.width = 2048;
@@ -1099,7 +1095,7 @@
 			const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' });
 			const url = URL.createObjectURL(svgBlob);
 			
-			return new Promise((resolve) => {
+			return new Promise<THREE.Texture | null>((resolve) => {
 				img.onload = () => {
 					ctx.clearRect(0, 0, canvas.width, canvas.height);
 					ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
