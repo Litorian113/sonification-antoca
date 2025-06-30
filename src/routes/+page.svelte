@@ -264,12 +264,40 @@
 							<h4>Interactive Control</h4>
 							<p>Filter instruments, adjust playback speed, and navigate through years to explore the data at your own pace.</p>
 						</div>
+					</div>			</div>
+		</div>
+
+		<!-- Orbiting Instruments Animation -->
+		<div class="orbiting-section">
+			<div class="orbiting-container">
+				<h3 class="orbiting-title">Instrument Layers</h3>
+				<div class="orbiting-circles">
+					<!-- Orbit paths -->
+					<div class="orbit-path orbit-outer"></div>
+					<div class="orbit-path orbit-middle"></div>
+					<div class="orbit-path orbit-inner"></div>
+					
+					<!-- Orbiting instruments -->
+					<div class="orbiting-item violin-orbit">
+						<img src="/img/violineIMG.png" alt="Violin - Surface Layer" />
+						<span class="orbit-label">Surface</span>
+					</div>
+					
+					<div class="orbiting-item piano-orbit">
+						<img src="/img/pianoIMG.png" alt="Piano - Middle Layer" />
+						<span class="orbit-label">Middle</span>
+					</div>
+					
+					<div class="orbiting-item accordion-orbit">
+						<img src="/img/accordionIMG.png" alt="Accordion - Deep Layer" />
+						<span class="orbit-label">Deep</span>
 					</div>
 				</div>
 			</div>
+		</div>
 
-			<div class="cta-section">
-				<button class="btn-secondary" on:click={scrollToTop} use:hoverShake>
+		<div class="cta-section">
+			<button class="btn-secondary" on:click={scrollToTop} use:hoverShake>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M18 15l-6-6-6 6"/>
 					</svg>
@@ -333,6 +361,7 @@
 		--border-color: rgba(0, 0, 0, 0.1);
 		--border-light: rgba(0, 0, 0, 0.05);
 		--shadow-color: rgba(0, 0, 0, 0.1);
+		--grid-color: rgba(0, 0, 0, 0.08);
 	}
 
 	:global([data-theme="dark"]) {
@@ -345,6 +374,7 @@
 		--border-color: rgba(255, 255, 255, 0.1);
 		--border-light: rgba(255, 255, 255, 0.05);
 		--shadow-color: rgba(0, 0, 0, 0.3);
+		--grid-color: rgba(255, 255, 255, 0.08);
 	}
 
 	:global(body) {
@@ -528,7 +558,7 @@
 
 	/* Instruments Section */
 	.instruments-section {
-		padding: 5rem 0;
+		padding: 6rem 0;
 		background: var(--bg-secondary);
 		transition: background-color 0.3s ease;
 	}
@@ -541,7 +571,7 @@
 
 	.section-header {
 		text-align: center;
-		margin-bottom: 4rem;
+		margin-bottom: 5rem;
 		max-width: 800px;
 		margin-left: auto;
 		margin-right: auto;
@@ -571,7 +601,7 @@
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
 		gap: 2rem;
-		margin-bottom: 4rem;
+		margin-bottom: 6rem;
 	}
 
 	.instrument-card {
@@ -717,7 +747,7 @@
 
 	/* Mapping Info */
 	.mapping-info {
-		margin: 4rem 0;
+		margin: 8rem 0 6rem 0;
 	}
 
 	.info-grid {
@@ -787,10 +817,181 @@
 		transition: color 0.3s ease;
 	}
 
+	/* Orbiting Instruments Section */
+	.orbiting-section {
+		padding: 6rem 0;
+		text-align: center;
+		background: var(--bg-secondary);
+		position: relative;
+		overflow: hidden;
+		transition: background-color 0.3s ease;
+	}
+
+	/* Subtle grid background */
+	.orbiting-section::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background-image: 
+			linear-gradient(var(--grid-color) 1px, transparent 1px),
+			linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+		background-size: 40px 40px;
+		opacity: 0.4;
+		mask: radial-gradient(ellipse 80% 60% at center, black 30%, rgba(0,0,0,0.6) 60%, transparent 100%);
+		-webkit-mask: radial-gradient(ellipse 80% 60% at center, black 30%, rgba(0,0,0,0.6) 60%, transparent 100%);
+		pointer-events: none;
+		transition: background-image 0.3s ease, opacity 0.3s ease;
+	}
+
+	.orbiting-container {
+		max-width: 600px;
+		margin: 0 auto;
+		position: relative;
+		z-index: 1;
+	}
+
+	.orbiting-title {
+		font-family: 'IBM Plex Sans', sans-serif;
+		font-size: 2rem;
+		font-weight: 300;
+		color: var(--text-primary);
+		margin: 0 0 4rem 0;
+		transition: color 0.3s ease;
+	}
+
+	.orbiting-circles {
+		position: relative;
+		width: 500px;
+		height: 500px;
+		margin: 0 auto;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* Orbit paths (visual guides) */
+	.orbit-path {
+		position: absolute;
+		border: 1.5px dashed var(--border-color);
+		border-radius: 50%;
+		opacity: 0.6;
+		transition: all 0.3s ease;
+		box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+	}
+
+	.orbit-path:hover {
+		opacity: 0.8;
+		border-width: 2px;
+	}
+
+	.orbit-outer {
+		width: 480px;
+		height: 480px;
+		top: 10px;
+		left: 10px;
+	}
+
+	.orbit-middle {
+		width: 320px;
+		height: 320px;
+		top: 90px;
+		left: 90px;
+	}
+
+	.orbit-inner {
+		width: 160px;
+		height: 160px;
+		top: 170px;
+		left: 170px;
+	}
+
+	/* Orbiting items */
+	.orbiting-item {
+		position: absolute;
+		width: 80px;
+		height: 80px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg-primary);
+		border: 2px solid var(--border-color);
+		border-radius: 50%;
+		padding: 12px;
+		box-shadow: 0 4px 12px var(--shadow-color);
+		transition: all 0.3s ease;
+	}
+
+	.orbiting-item:hover {
+		border-color: var(--accent-color);
+		transform: scale(1.1);
+		z-index: 10;
+	}
+
+	.orbiting-item img {
+		width: 32px;
+		height: 32px;
+		object-fit: contain;
+		filter: grayscale(100%);
+		transition: filter 0.3s ease;
+	}
+
+	.orbiting-item:hover img {
+		filter: grayscale(0%);
+	}
+
+	.orbit-label {
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 8px;
+		color: var(--text-secondary);
+		margin-top: 4px;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		transition: color 0.3s ease;
+	}
+
+	.orbiting-item:hover .orbit-label {
+		color: var(--accent-color);
+	}
+
+	/* Animation keyframes */
+	@keyframes orbit {
+		from {
+			transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg);
+		}
+	}
+
+	/* Violin - Outer orbit */
+	.violin-orbit {
+		--orbit-radius: 240px;
+		animation: orbit 20s linear infinite;
+		border-color: #3398F1;
+	}
+
+	/* Piano - Middle orbit */
+	.piano-orbit {
+		--orbit-radius: 160px;
+		animation: orbit 15s linear infinite;
+		border-color: #FF4F14;
+	}
+
+	/* Accordion - Inner orbit */
+	.accordion-orbit {
+		--orbit-radius: 80px;
+		animation: orbit 10s linear infinite;
+		border-color: #F8AE31;
+	}
+
 	/* CTA Section */
 	.cta-section {
 		text-align: center;
-		padding: 3rem 0;
+		padding: 4rem 0;
 		display: flex;
 		gap: 1rem;
 		justify-content: center;
@@ -800,7 +1001,7 @@
 
 	/* Credits Section */
 	.credits-section {
-		padding: 4rem 0;
+		padding: 6rem 0;
 		background: var(--bg-primary);
 		border-top: 1px solid var(--border-light);
 		transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -813,7 +1014,7 @@
 	}
 
 	.credits-header {
-		margin-bottom: 3rem;
+		margin-bottom: 4rem;
 	}
 
 	.credits-title {
@@ -946,7 +1147,15 @@
 		}
 
 		.credits-section {
-			padding: 2rem 0;
+			padding: 3rem 0;
+		}
+
+		.instruments-section {
+			padding: 4rem 0;
+		}
+
+		.orbiting-section {
+			padding: 4rem 0;
 		}
 
 		.credits-info {
@@ -956,6 +1165,56 @@
 		.supervisors,
 		.team-members {
 			gap: 1rem;
+		}
+
+		/* Orbiting Animation - Tablet */
+		.orbiting-circles {
+			width: 400px;
+			height: 400px;
+		}
+
+		.orbit-outer {
+			width: 380px;
+			height: 380px;
+			top: 10px;
+			left: 10px;
+		}
+
+		.orbit-middle {
+			width: 260px;
+			height: 260px;
+			top: 70px;
+			left: 70px;
+		}
+
+		.orbit-inner {
+			width: 140px;
+			height: 140px;
+			top: 130px;
+			left: 130px;
+		}
+
+		.violin-orbit {
+			--orbit-radius: 190px;
+		}
+
+		.piano-orbit {
+			--orbit-radius: 130px;
+		}
+
+		.accordion-orbit {
+			--orbit-radius: 70px;
+		}
+
+		.orbiting-item {
+			width: 70px;
+			height: 70px;
+			padding: 10px;
+		}
+
+		.orbiting-item img {
+			width: 28px;
+			height: 28px;
 		}
 	}
 
@@ -1001,6 +1260,70 @@
 		.supervisors {
 			flex-direction: column;
 			align-items: center;
+		}
+
+		/* Orbiting Animation - Mobile */
+		.orbiting-section {
+			padding: 3rem 0;
+		}
+
+		.orbiting-title {
+			font-size: 1.5rem;
+			margin-bottom: 3rem;
+		}
+
+		.orbiting-circles {
+			width: 300px;
+			height: 300px;
+		}
+
+		.orbit-outer {
+			width: 280px;
+			height: 280px;
+			top: 10px;
+			left: 10px;
+		}
+
+		.orbit-middle {
+			width: 200px;
+			height: 200px;
+			top: 50px;
+			left: 50px;
+		}
+
+		.orbit-inner {
+			width: 120px;
+			height: 120px;
+			top: 90px;
+			left: 90px;
+		}
+
+		.violin-orbit {
+			--orbit-radius: 140px;
+		}
+
+		.piano-orbit {
+			--orbit-radius: 100px;
+		}
+
+		.accordion-orbit {
+			--orbit-radius: 60px;
+		}
+
+		.orbiting-item {
+			width: 60px;
+			height: 60px;
+			padding: 8px;
+		}
+
+		.orbiting-item img {
+			width: 24px;
+			height: 24px;
+		}
+
+		.orbit-label {
+			font-size: 7px;
+			margin-top: 2px;
 		}
 	}
 </style>
