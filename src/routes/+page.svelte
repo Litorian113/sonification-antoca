@@ -164,20 +164,40 @@
 			<div class="mapping-info">
 				<div class="info-grid">
 					<div class="info-item">
-						<h4>Volume & Magnitude Mapping</h4>
-						<p>Sound volume directly corresponds to earthquake magnitude (5.5-7.5+). Stronger earthquakes produce louder sounds, with catastrophic events (8.0+) triggering maximum volume percussion.</p>
+						<div class="info-image">
+							<img src="/cards/VolumeMagnitudeMapping.png" alt="Volume and Magnitude Mapping visualization" loading="lazy">
+						</div>
+						<div class="info-content">
+							<h4>Volume & Magnitude Mapping</h4>
+							<p>Sound volume directly corresponds to earthquake magnitude (5.5-7.5+). Stronger earthquakes produce louder sounds, with catastrophic events (8.0+) triggering maximum volume percussion.</p>
+						</div>
 					</div>
 					<div class="info-item">
-						<h4>Visual Layers</h4>
-						<p>The 3D globe shows different depth layers, with surface events on the outer sphere and deep events on inner layers.</p>
+						<div class="info-image">
+							<img src="/cards/VisualLayers.png" alt="Visual layers representation" loading="lazy">
+						</div>
+						<div class="info-content">
+							<h4>Visual Layers</h4>
+							<p>The 3D globe shows different depth layers, with surface events on the outer sphere and deep events on inner layers.</p>
+						</div>
 					</div>
 					<div class="info-item">
-						<h4>Temporal Animation</h4>
-						<p>Earthquakes play chronologically from 2010-2016, showing the evolution of seismic activity over time.</p>
+						<div class="info-image">
+							<img src="/cards/TemporalAnimation.png" alt="Temporal animation visualization" loading="lazy">
+						</div>
+						<div class="info-content">
+							<h4>Temporal Animation</h4>
+							<p>Earthquakes play chronologically from 2010-2016, showing the evolution of seismic activity over time.</p>
+						</div>
 					</div>
 					<div class="info-item">
-						<h4>Interactive Control</h4>
-						<p>Filter instruments, adjust playback speed, and navigate through years to explore the data at your own pace.</p>
+						<div class="info-image">
+							<img src="/cards/InteractiveControl.png" alt="Interactive control interface" loading="lazy">
+						</div>
+						<div class="info-content">
+							<h4>Interactive Control</h4>
+							<p>Filter instruments, adjust playback speed, and navigate through years to explore the data at your own pace.</p>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -196,6 +216,40 @@
 						<path d="M5 12h14M12 5l7 7-7 7"/>
 					</svg>
 				</a>
+			</div>
+		</div>
+	</section>
+
+	<!-- Credits Section -->
+	<section class="credits-section">
+		<div class="container">
+			<div class="credits-content">
+				<div class="credits-header">
+					<h2 class="credits-title">Project Credits</h2>
+				</div>
+				
+				<div class="credits-info">
+					<p class="course-info">
+						This project was created as part of the course <strong>"Audio in der Interaktionsgestaltung"</strong> in SoSe 2025 at HfG Schwäbisch Gmünd.
+					</p>
+					
+					<div class="supervision">
+						<h4>Supervision</h4>
+						<div class="supervisors">
+							<span>David Oswald</span>
+							<span>Rasih Bayoelken</span>
+						</div>
+					</div>
+					
+					<div class="team">
+						<h4>Interaction Design 4</h4>
+						<div class="team-members">
+							<div class="member">Vivien Cai</div>
+							<div class="member">Rebeka Tot</div>
+							<div class="member">Franz Anhäupl</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</section>
@@ -515,10 +569,45 @@
 	}
 
 	.info-item {
-		padding: 2rem;
 		background: #ffffff;
 		border: 1px solid rgba(0, 0, 0, 0.1);
 		border-radius: 4px;
+		overflow: hidden;
+		transition: all 0.3s ease;
+	}
+
+	.info-item:hover {
+		border-color: rgba(0, 0, 0, 0.2);
+		transform: translateY(-2px);
+		box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+	}
+
+	.info-image {
+		height: 120px;
+		overflow: hidden;
+		background: #f8f9fa;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+	}
+
+	.info-image img {
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
+		filter: grayscale(100%);
+		opacity: 0.8;
+		transition: all 0.3s ease;
+	}
+
+	.info-item:hover .info-image img {
+		filter: grayscale(0%);
+		opacity: 1;
+	}
+
+	.info-content {
+		padding: 1.5rem;
 	}
 
 	.info-item h4 {
@@ -546,6 +635,101 @@
 		justify-content: center;
 		align-items: center;
 		flex-wrap: wrap;
+	}
+
+	/* Credits Section */
+	.credits-section {
+		padding: 4rem 0;
+		background: #ffffff;
+		border-top: 1px solid rgba(0, 0, 0, 0.05);
+	}
+
+	.credits-content {
+		max-width: 800px;
+		margin: 0 auto;
+		text-align: center;
+	}
+
+	.credits-header {
+		margin-bottom: 3rem;
+	}
+
+	.credits-title {
+		font-family: 'IBM Plex Sans', sans-serif;
+		font-size: clamp(1.5rem, 4vw, 2.5rem);
+		font-weight: 300;
+		color: #1a1a1a;
+		margin: 0;
+		letter-spacing: -0.01em;
+	}
+
+	.credits-info {
+		display: flex;
+		flex-direction: column;
+		gap: 2.5rem;
+		align-items: center;
+	}
+
+	.course-info {
+		font-family: 'IBM Plex Sans', sans-serif;
+		font-size: 1.1rem;
+		color: #6b7280;
+		margin: 0;
+		line-height: 1.7;
+		max-width: 600px;
+	}
+
+	.supervision,
+	.team {
+		text-align: center;
+	}
+
+	.supervision h4,
+	.team h4 {
+		font-family: 'IBM Plex Sans', sans-serif;
+		font-size: 1rem;
+		font-weight: 500;
+		color: #1a1a1a;
+		margin: 0 0 1rem 0;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	.supervisors {
+		display: flex;
+		gap: 2rem;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.supervisors span {
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 1rem;
+		color: #2563eb;
+		font-weight: 500;
+	}
+
+	.team-members {
+		display: flex;
+		gap: 2rem;
+		justify-content: center;
+		flex-wrap: wrap;
+	}
+
+	.member {
+		font-family: 'IBM Plex Mono', monospace;
+		font-size: 1rem;
+		color: #1a1a1a;
+		font-weight: 500;
+		padding: 0.5rem 1rem;
+		border: 1px solid rgba(0, 0, 0, 0.1);
+		border-radius: 4px;
+		transition: all 0.2s ease;
+	}
+
+	.member:hover {
+		border-color: rgba(0, 0, 0, 0.2);
+		background: #f8f9fa;
 	}
 
 	/* Responsive Design */
@@ -582,12 +766,30 @@
 		}
 
 		.info-grid {
-			grid-template-columns: 1fr;
+			grid-template-columns: repeat(2, 1fr);
 			gap: 1rem;
 		}
 
-		.info-item {
-			padding: 1.5rem;
+		.info-content {
+			padding: 1rem;
+		}
+
+		.info-image {
+			height: 80px;
+			padding: 0.5rem;
+		}
+
+		.credits-section {
+			padding: 2rem 0;
+		}
+
+		.credits-info {
+			gap: 2rem;
+		}
+
+		.supervisors,
+		.team-members {
+			gap: 1rem;
 		}
 	}
 
@@ -605,10 +807,34 @@
 			padding: 1.5rem;
 		}
 
+		.info-grid {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+
+		.info-content {
+			padding: 1rem;
+		}
+
+		.info-image {
+			height: 100px;
+			padding: 1rem;
+		}
+
 		.depth-range {
 			flex-direction: column;
 			gap: 0.25rem;
 			text-align: center;
+		}
+
+		.team-members {
+			flex-direction: column;
+			align-items: center;
+		}
+
+		.supervisors {
+			flex-direction: column;
+			align-items: center;
 		}
 	}
 </style>
