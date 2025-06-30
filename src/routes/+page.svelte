@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
+	import { 
+		heroEarthquake, 
+		sectionEarthquake, 
+		cardEarthquake, 
+		creditsEarthquake 
+	} from '$lib/actions';
 
 	let mounted = false;
 	let heroSection: HTMLElement;
@@ -34,7 +40,7 @@
 	<section class="hero-section" bind:this={heroSection}>
 		<div class="hero-content" class:fade-in={mounted}>
 			<div class="hero-header">
-				<h1 class="hero-title">
+				<h1 class="hero-title" use:heroEarthquake>
 					<span class="title-primary">Earthquake</span>
 					<span class="title-accent">Sonification</span>
 				</h1>
@@ -65,7 +71,7 @@
 	<section class="instruments-section" bind:this={instrumentsSection}>
 		<div class="container">
 			<div class="section-header">
-				<h2 class="section-title">Sound Mapping System</h2>
+				<h2 class="section-title" use:sectionEarthquake>Sound Mapping System</h2>
 				<p class="section-description">
 					Earthquakes are mapped to different instruments based on their depth, creating a layered musical representation of seismic activity.
 				</p>
@@ -78,7 +84,7 @@
 						<img src="/img/violineIMG.png" alt="Violin representing surface earthquakes" loading="lazy">
 					</div>
 					<div class="card-content">
-						<h3 class="card-title">Violin</h3>
+						<h3 class="card-title" use:cardEarthquake>Violin</h3>
 						<div class="depth-range">
 							<span class="depth-label">Depth Range</span>
 							<span class="depth-value">0 - 30 km</span>
@@ -104,7 +110,7 @@
 						<img src="/img/pianoIMG.png" alt="Piano representing intermediate depth earthquakes" loading="lazy">
 					</div>
 					<div class="card-content">
-						<h3 class="card-title">Piano</h3>
+						<h3 class="card-title" use:cardEarthquake>Piano</h3>
 						<div class="depth-range">
 							<span class="depth-label">Depth Range</span>
 							<span class="depth-value">30 - 100 km</span>
@@ -130,7 +136,7 @@
 						<img src="/img/accordionIMG.png" alt="Accordion representing deep earthquakes" loading="lazy">
 					</div>
 					<div class="card-content">
-						<h3 class="card-title">Accordion</h3>
+						<h3 class="card-title" use:cardEarthquake>Accordion</h3>
 						<div class="depth-range">
 							<span class="depth-label">Depth Range</span>
 							<span class="depth-value">100+ km</span>
@@ -156,7 +162,7 @@
 						<img src="/img/concussion.png" alt="Percussion representing catastrophic earthquakes" loading="lazy">
 					</div>
 					<div class="card-content">
-						<h3 class="card-title">Percussion</h3>
+						<h3 class="card-title" use:cardEarthquake>Percussion</h3>
 						<div class="depth-range">
 							<span class="depth-label">Audio Level</span>
 							<span class="depth-value">Max</span>
@@ -241,7 +247,7 @@
 		<div class="container">
 			<div class="credits-content">
 				<div class="credits-header">
-					<h2 class="credits-title">Project Credits</h2>
+					<h2 class="credits-title" use:creditsEarthquake>Project Credits</h2>
 				</div>
 				
 				<div class="credits-info">
