@@ -5,7 +5,8 @@
 		heroEarthquake, 
 		sectionEarthquake, 
 		cardEarthquake, 
-		creditsEarthquake 
+		creditsEarthquake,
+		hoverShake
 	} from '$lib/actions';
 	import { browser } from '$app/environment';
 
@@ -64,7 +65,7 @@
 
 <main class="main-container">
 	<!-- Theme Toggle Button -->
-	<button class="theme-toggle" on:click={toggleTheme} aria-label="Toggle theme">
+	<button class="theme-toggle" on:click={toggleTheme} aria-label="Toggle theme" use:hoverShake>
 		{#if isDarkMode}
 			<!-- Sun icon for switching to light mode -->
 			<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -93,14 +94,14 @@
 			</div>
 			
 			<div class="hero-actions">
-				<a href="{base}/visualisation" class="btn-primary">
+				<a href="{base}/visualisation" class="btn-primary" use:hoverShake>
 					<span>Start Visualization</span>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M5 12h14M12 5l7 7-7 7"/>
 					</svg>
 				</a>
 				
-				<button class="btn-secondary" on:click={scrollToInstruments}>
+				<button class="btn-secondary" on:click={scrollToInstruments} use:hoverShake>
 					<span>Learn More</span>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M6 9l6 6 6-6"/>
@@ -122,7 +123,7 @@
 
 			<div class="instruments-grid">
 				<!-- Violin - Surface Layer -->
-				<div class="instrument-card violin-card">
+				<div class="instrument-card violin-card" use:hoverShake>
 					<div class="card-image">
 						<img src="/img/violineIMG.png" alt="Violin representing surface earthquakes" loading="lazy">
 					</div>
@@ -148,7 +149,7 @@
 				</div>
 
 				<!-- Piano - Middle Layer -->
-				<div class="instrument-card piano-card">
+				<div class="instrument-card piano-card" use:hoverShake>
 					<div class="card-image">
 						<img src="/img/pianoIMG.png" alt="Piano representing intermediate depth earthquakes" loading="lazy">
 					</div>
@@ -174,7 +175,7 @@
 				</div>
 
 				<!-- Accordion - Deep Layer -->
-				<div class="instrument-card accordion-card">
+				<div class="instrument-card accordion-card" use:hoverShake>
 					<div class="card-image">
 						<img src="/img/accordionIMG.png" alt="Accordion representing deep earthquakes" loading="lazy">
 					</div>
@@ -200,7 +201,7 @@
 				</div>
 
 				<!-- Percussion - Catastrophic Events -->
-				<div class="instrument-card percussion-card">
+				<div class="instrument-card percussion-card" use:hoverShake>
 					<div class="card-image">
 						<img src="/img/concussion.png" alt="Percussion representing catastrophic earthquakes" loading="lazy">
 					</div>
@@ -228,7 +229,7 @@
 
 			<div class="mapping-info">
 				<div class="info-grid">
-					<div class="info-item">
+					<div class="info-item" use:hoverShake>
 						<div class="info-image">
 							<img src="/cards/VolumeMagnitudeMapping.png" alt="Volume and Magnitude Mapping visualization" loading="lazy">
 						</div>
@@ -237,7 +238,7 @@
 							<p>Sound volume directly corresponds to earthquake magnitude (5.5-7.5+). Stronger earthquakes produce louder sounds, with catastrophic events (8.0+) triggering maximum volume percussion.</p>
 						</div>
 					</div>
-					<div class="info-item">
+					<div class="info-item" use:hoverShake>
 						<div class="info-image">
 							<img src="/cards/VisualLayers.png" alt="Visual layers representation" loading="lazy">
 						</div>
@@ -246,7 +247,7 @@
 							<p>The 3D globe shows different depth layers, with surface events on the outer sphere and deep events on inner layers.</p>
 						</div>
 					</div>
-					<div class="info-item">
+					<div class="info-item" use:hoverShake>
 						<div class="info-image">
 							<img src="/cards/TemporalAnimation.png" alt="Temporal animation visualization" loading="lazy">
 						</div>
@@ -255,7 +256,7 @@
 							<p>Earthquakes play chronologically from 2010-2016, showing the evolution of seismic activity over time.</p>
 						</div>
 					</div>
-					<div class="info-item">
+					<div class="info-item" use:hoverShake>
 						<div class="info-image">
 							<img src="/cards/InteractiveControl.png" alt="Interactive control interface" loading="lazy">
 						</div>
@@ -268,14 +269,14 @@
 			</div>
 
 			<div class="cta-section">
-				<button class="btn-secondary" on:click={scrollToTop}>
+				<button class="btn-secondary" on:click={scrollToTop} use:hoverShake>
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M18 15l-6-6-6 6"/>
 					</svg>
 					<span>Back to Top</span>
 				</button>
 				
-				<a href="{base}/visualisation" class="btn-primary large">
+				<a href="{base}/visualisation" class="btn-primary large" use:hoverShake>
 					<span>Experience the Sonification</span>
 					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<path d="M5 12h14M12 5l7 7-7 7"/>
@@ -324,8 +325,8 @@
 	/* CSS Custom Properties für Themes */
 	:global(:root) {
 		/* Light Mode (Default) */
-		--bg-primary: #ffffff;
-		--bg-secondary: #fafafa;
+		--bg-primary: #f6f6f6;
+		--bg-secondary: #eeeeee;
 		--text-primary: #1a1a1a;
 		--text-secondary: #6b7280;
 		--accent-color: #2563eb;
@@ -338,7 +339,7 @@
 		/* Dark Mode */
 		--bg-primary: #0a0a0a;
 		--bg-secondary: #111111;
-		--text-primary: #ffffff;
+		--text-primary: #f6f6f6;
 		--text-secondary: #a1a1aa;
 		--accent-color: #3b82f6;
 		--border-color: rgba(255, 255, 255, 0.1);
@@ -884,7 +885,7 @@
 	.member {
 		font-family: 'IBM Plex Mono', monospace;
 		font-size: 1rem;
-		color: #1a1a1a;
+		color: var(--text-primary);
 		font-weight: 500;
 		padding: 0.5rem 1rem;
 		border: 1px solid rgba(0, 0, 0, 0.1);

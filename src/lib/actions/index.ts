@@ -43,3 +43,15 @@ export const creditsEarthquake = (node: HTMLElement) => {
 		once: true
 	});
 };
+
+// Hover shake effect - quick shake on hover
+export const hoverShake = (node: HTMLElement) => {
+	// Add CSS class for hover effect
+	node.classList.add('earthquake-hover');
+	
+	return {
+		destroy() {
+			node.classList.remove('earthquake-hover');
+		}
+	};
+};

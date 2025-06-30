@@ -184,6 +184,54 @@ export function earthquakeAnimation(
 				animation: earthquake-intense var(--earthquake-duration, 1.5s) ease-out;
 				transform-origin: center;
 			}
+
+			/* Hover shake effect - subtle and quick */
+			@keyframes earthquake-hover {
+				0%, 100% {
+					transform: translate(0) rotate(0deg);
+					filter: blur(0);
+				}
+				10% {
+					transform: translate(0.5px, -0.5px) rotate(-0.2deg);
+					filter: blur(0.002em);
+				}
+				20% {
+					transform: translate(-0.5px, 0.5px) rotate(0.1deg);
+					filter: blur(0.004em);
+				}
+				30% {
+					transform: translate(0.3px, 0.3px) rotate(-0.1deg);
+					filter: blur(0.002em);
+				}
+				40% {
+					transform: translate(-0.3px, -0.3px) rotate(0.15deg);
+					filter: blur(0.003em);
+				}
+				50% {
+					transform: translate(0.4px, -0.2px) rotate(-0.05deg);
+					filter: blur(0.001em);
+				}
+				60% {
+					transform: translate(-0.2px, 0.4px) rotate(0.08deg);
+					filter: blur(0.002em);
+				}
+				70% {
+					transform: translate(0.1px, -0.1px) rotate(-0.03deg);
+					filter: blur(0.001em);
+				}
+				80% {
+					transform: translate(-0.1px, 0.1px) rotate(0.02deg);
+					filter: blur(0.0005em);
+				}
+				90% {
+					transform: translate(0.05px, -0.05px) rotate(-0.01deg);
+					filter: blur(0.0002em);
+				}
+			}
+
+			.earthquake-hover:hover {
+				animation: earthquake-hover 0.6s ease-out;
+			}
 		`;
 		document.head.appendChild(style);
 	}
