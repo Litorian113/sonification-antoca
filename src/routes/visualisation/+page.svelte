@@ -19,11 +19,13 @@
 	let playButton: HTMLButtonElement;
 
 	// Globe rotation settings
-	let globeRotationSpeed = 0.01; // Rotation speed for globes
+	let globeRotationSpeed = 0.005; // Rotation speed for globes
 	let isGlobeRotating = true; // Enable/disable globe rotation
 	let gridGroup: THREE.Group; // Reference to the grid lines
 	let persistentDotsGroup: THREE.Group; // Reference to persistent dots group
 	let shockwavesGroup: THREE.Group; // Reference to shockwaves group for rotation sync
+	let middleGlobeGroup: THREE.Group; // Reference to middle globe for rotation
+	let innerGlobeGroup: THREE.Group; // Reference to inner globe for rotation
 
 	// Instrument toggle states
 	let useAlternativeInstruments = {
@@ -820,54 +822,81 @@
 		// Do NOT clear currentYear, so it stays visible and resumes from where it left off
 	};
 
-	// Create grid lines for latitude and longitude
+	// Create grid lines for latitude and longitude on all three depth layers
 	function createGridLines() {
 		const gridGroup = new THREE.Group();
 
-		// Create material for grid lines
-		const gridMaterial = new THREE.LineBasicMaterial({
-			color: 0xffffff,
-			opacity: 0.15,
-			transparent: true,
+		// Define the three globe layers with different visual properties
+		const globeLayers = [
+			{ 
+				radius: 7.0,    // Outer globe (shallow earthquakes 0-30km)
+				color: 0x3398F1, // Blue tint
+				opacity: 0.12,
+				name: 'shallow'
+			},
+			{ 
+				radius: 6.0,    // Middle globe (medium earthquakes 30-100km)
+				color: 0xF8AE31, // Orange tint
+				opacity: 0.10,
+				name: 'medium'
+			},
+			{ 
+				radius: 5.0,    // Inner globe (deep earthquakes >100km)
+				color: 0xFF4F14, // Red tint
+				opacity: 0.08,
+				name: 'deep'
+			}
+		];
+
+		// Create grid lines for each globe layer
+		globeLayers.forEach(layer => {
+			// Create material with layer-specific color and opacity
+			const gridMaterial = new THREE.LineBasicMaterial({
+				color: layer.color,
+				opacity: layer.opacity,
+				transparent: true,
+			});
+
+			// Latitude lines (horizontal circles)
+			for (let lat = -80; lat <= 80; lat += 20) {
+				const phi = (90 - lat) * (Math.PI / 180);
+				const geometry = new THREE.BufferGeometry();
+				const points = [];
+
+				for (let i = 0; i <= 64; i++) {
+					const theta = (i / 64) * Math.PI * 2;
+					const x = Math.sin(phi) * Math.cos(theta) * layer.radius;
+					const y = Math.cos(phi) * layer.radius;
+					const z = Math.sin(phi) * Math.sin(theta) * layer.radius;
+					points.push(new THREE.Vector3(x, y, z));
+				}
+
+				geometry.setFromPoints(points);
+				const line = new THREE.Line(geometry, gridMaterial);
+				line.userData.layer = layer.name;
+				gridGroup.add(line);
+			}
+
+			// Longitude lines (vertical semicircles)
+			for (let lng = -180; lng < 180; lng += 30) {
+				const geometry = new THREE.BufferGeometry();
+				const points = [];
+
+				for (let i = 0; i <= 32; i++) {
+					const phi = (i / 32) * Math.PI;
+					const theta = lng * (Math.PI / 180);
+					const x = Math.sin(phi) * Math.cos(theta) * layer.radius;
+					const y = Math.cos(phi) * layer.radius;
+					const z = Math.sin(phi) * Math.sin(theta) * layer.radius;
+					points.push(new THREE.Vector3(x, y, z));
+				}
+
+				geometry.setFromPoints(points);
+				const line = new THREE.Line(geometry, gridMaterial);
+				line.userData.layer = layer.name;
+				gridGroup.add(line);
+			}
 		});
-
-		// Latitude lines (horizontal circles)
-		for (let lat = -80; lat <= 80; lat += 20) {
-			const phi = (90 - lat) * (Math.PI / 180);
-			const geometry = new THREE.BufferGeometry();
-			const points = [];
-
-			for (let i = 0; i <= 64; i++) {
-				const theta = (i / 64) * Math.PI * 2;
-				const x = Math.sin(phi) * Math.cos(theta) * 7.0;
-				const y = Math.cos(phi) * 7.0;
-				const z = Math.sin(phi) * Math.sin(theta) * 7.0;
-				points.push(new THREE.Vector3(x, y, z));
-			}
-
-			geometry.setFromPoints(points);
-			const line = new THREE.Line(geometry, gridMaterial);
-			gridGroup.add(line);
-		}
-
-		// Longitude lines (vertical semicircles)
-		for (let lng = -180; lng < 180; lng += 30) {
-			const geometry = new THREE.BufferGeometry();
-			const points = [];
-
-			for (let i = 0; i <= 32; i++) {
-				const phi = (i / 32) * Math.PI;
-				const theta = lng * (Math.PI / 180);
-				const x = Math.sin(phi) * Math.cos(theta) * 7.0;
-				const y = Math.cos(phi) * 7.0;
-				const z = Math.sin(phi) * Math.sin(theta) * 7.0;
-				points.push(new THREE.Vector3(x, y, z));
-			}
-
-			geometry.setFromPoints(points);
-			const line = new THREE.Line(geometry, gridMaterial);
-			gridGroup.add(line);
-		}
 
 		scene.add(gridGroup);
 		return gridGroup; // Return reference for rotation
@@ -1335,18 +1364,50 @@
 			controls.minDistance = 12;
 			controls.maxDistance = 60;
 
-			// Create Earth globe with higher resolution
-			const geometry = new THREE.SphereGeometry(7, 128, 128);
-
-			// Create a completely transparent Earth material (invisible globe)
-			const material = new THREE.MeshBasicMaterial({
+			// Create the three globe layers with subtle transparency
+			
+			// Outer globe (shallow earthquakes 0-30km) - completely transparent
+			const outerGeometry = new THREE.SphereGeometry(7, 128, 128);
+			const outerMaterial = new THREE.MeshBasicMaterial({
 				transparent: true,
 				opacity: 0.0,
-				visible: false, // Make globe completely invisible
+				visible: false, // Keep outer globe invisible
 			});
-
-			globe = new THREE.Mesh(geometry, material);
+			globe = new THREE.Mesh(outerGeometry, outerMaterial);
 			scene.add(globe);
+
+			// Middle globe (medium earthquakes 30-100km) - very subtle orange tint
+			const middleGeometry = new THREE.SphereGeometry(6, 128, 128);
+			const middleMaterial = new THREE.MeshBasicMaterial({
+				color: 0xF8AE31, // Orange color matching the grid
+				transparent: true,
+				opacity: 0.03, // Very subtle
+				side: THREE.BackSide, // Show from inside
+				depthWrite: false,
+			});
+			const middleGlobe = new THREE.Mesh(middleGeometry, middleMaterial);
+			scene.add(middleGlobe);
+
+			// Inner globe (deep earthquakes >100km) - very subtle red tint
+			const innerGeometry = new THREE.SphereGeometry(5, 128, 128);
+			const innerMaterial = new THREE.MeshBasicMaterial({
+				color: 0xFF4F14, // Red color matching the grid
+				transparent: true,
+				opacity: 0.04, // Slightly more visible than middle
+				side: THREE.BackSide, // Show from inside
+				depthWrite: false,
+			});
+			const innerGlobe = new THREE.Mesh(innerGeometry, innerMaterial);
+			scene.add(innerGlobe);
+
+			// Store references for rotation synchronization
+			middleGlobeGroup = new THREE.Group();
+			middleGlobeGroup.add(middleGlobe);
+			scene.add(middleGlobeGroup);
+
+			innerGlobeGroup = new THREE.Group();
+			innerGlobeGroup.add(innerGlobe);
+			scene.add(innerGlobeGroup);
 
 			// Create country borders overlay
 			await createCountryBordersOverlay();
@@ -1399,6 +1460,14 @@
 						// Rotate shockwaves group (synchronized with dots and globe)
 						if (shockwavesGroup) {
 							shockwavesGroup.rotation.y += globeRotationSpeed;
+						}
+
+						// Rotate middle and inner globe groups
+						if (middleGlobeGroup) {
+							middleGlobeGroup.rotation.y += globeRotationSpeed;
+						}
+						if (innerGlobeGroup) {
+							innerGlobeGroup.rotation.y += globeRotationSpeed;
 						}
 					}
 
