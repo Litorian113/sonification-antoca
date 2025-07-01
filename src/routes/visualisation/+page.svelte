@@ -169,17 +169,17 @@
 		const intensity = (clampedMagnitude - minMagnitude) / (maxMagnitude - minMagnitude);
 
 		if (depth > 100) {
-			// Depth > 100: Accordion - Gradient from strong #F8AE31 to weak #E7A22E
-			const strongColor = new THREE.Color(0xF8AE31);
-			const weakColor = new THREE.Color(0xE7A22E);
-			return strongColor.clone().lerp(weakColor, 1.0 - intensity);
-		} else if (depth >= 30) {
-			// Depth 30-100: Piano - Gradient from strong #FF4F14 to weak #C43B29
+			// Depth > 100: Accordion - Gradient from strong #FF4F14 to weak #C43B29 (RED)
 			const strongColor = new THREE.Color(0xFF4F14);
 			const weakColor = new THREE.Color(0xC43B29);
 			return strongColor.clone().lerp(weakColor, 1.0 - intensity);
+		} else if (depth >= 30) {
+			// Depth 30-100: Piano - Gradient from strong #F8AE31 to weak #E7A22E (ORANGE)
+			const strongColor = new THREE.Color(0xF8AE31);
+			const weakColor = new THREE.Color(0xE7A22E);
+			return strongColor.clone().lerp(weakColor, 1.0 - intensity);
 		} else {
-			// Depth 0-30: Violin - Gradient from strong #3398F1 to weak #1164B6
+			// Depth 0-30: Violin - Gradient from strong #3398F1 to weak #1164B6 (BLUE)
 			const strongColor = new THREE.Color(0x3398F1);
 			const weakColor = new THREE.Color(0x1164B6);
 			return strongColor.clone().lerp(weakColor, 1.0 - intensity);

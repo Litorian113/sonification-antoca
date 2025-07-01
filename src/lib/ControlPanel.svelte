@@ -13,7 +13,7 @@
 		violin: true
 	};
 	export let currentYear: number | null = null;
-	export let hasPlayed: boolean = false;
+	export const hasPlayed: boolean = false;
 	export let minYear = 2010;
 	export let maxYear = 2016;
 	export let selectedYear = 2010;
@@ -230,11 +230,11 @@
 
 			<!-- Alternative Instruments -->
 			<div class="alternative-instruments">
-				<!-- Shallow Earthquakes (0-30km) -->
+				<!-- Shallow Earthquakes (0-30km) - OUTER LAYER - BLUE -->
 				<div class="depth-section">
 					<div class="depth-header">
 						<div class="depth-color-indicator shallow"></div>
-						<span class="depth-label">Shallow (0-30km)</span>
+						<span class="depth-label">Shallow (0-30km) - Outer Layer</span>
 					</div>
 					<div class="instrument-toggle-row">
 						<button
@@ -256,11 +256,11 @@
 					</div>
 				</div>
 
-				<!-- Medium Earthquakes (30-100km) -->
+				<!-- Medium Earthquakes (30-100km) - MIDDLE LAYER - ORANGE -->
 				<div class="depth-section">
 					<div class="depth-header">
 						<div class="depth-color-indicator medium"></div>
-						<span class="depth-label">Medium (30-100km)</span>
+						<span class="depth-label">Medium (30-100km) - Middle Layer</span>
 					</div>
 					<div class="instrument-toggle-row">
 						<button
@@ -282,11 +282,11 @@
 					</div>
 				</div>
 
-				<!-- Deep Earthquakes (>100km) -->
+				<!-- Deep Earthquakes (>100km) - INNER LAYER - RED -->
 				<div class="depth-section">
 					<div class="depth-header">
 						<div class="depth-color-indicator deep"></div>
-						<span class="depth-label">Deep (>100km)</span>
+						<span class="depth-label">Deep (>100km) - Inner Layer</span>
 					</div>
 					<div class="instrument-toggle-row">
 						<button
@@ -308,7 +308,7 @@
 					</div>
 				</div>
 
-				<!-- Catastrophic Earthquakes (Magnitude 8+) -->
+				<!-- Catastrophic Earthquakes (Magnitude 8+) - SPECIAL EVENTS - CREAM -->
 				<div class="depth-section">
 					<div class="depth-header">
 						<div class="depth-color-indicator catastrophic"></div>
@@ -775,13 +775,13 @@
 	}
 
 	.depth-color-indicator.medium {
-		background: linear-gradient(45deg, #FF4F14, #C43B29);
-		box-shadow: 0 0 6px rgba(255, 79, 20, 0.4);
+		background: linear-gradient(45deg, #F8AE31, #E7A22E);
+		box-shadow: 0 0 6px rgba(248, 174, 49, 0.4);
 	}
 
 	.depth-color-indicator.deep {
-		background: linear-gradient(45deg, #F8AE31, #E7A22E);
-		box-shadow: 0 0 6px rgba(248, 174, 49, 0.4);
+		background: linear-gradient(45deg, #FF4F14, #C43B29);
+		box-shadow: 0 0 6px rgba(255, 79, 20, 0.4);
 	}
 
 	.depth-color-indicator.catastrophic {
@@ -907,128 +907,6 @@
 			width: 10px;
 			height: 10px;
 		}
-	}
-
-	/* Remove old styles */
-	.alt-instrument-buttons {
-		display: none;
-	}
-
-	.alt-instrument-btn {
-		display: none;
-	}
-
-	/* Instrument Grid (Old styles to keep existing compatibility) */
-	.instrument-grid {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-	}
-
-	.instrument-toggle {
-		display: flex;
-		align-items: center;
-		gap: 16px;
-		padding: 20px;
-		background: transparent;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 4px;
-		cursor: pointer;
-		transition: all 0.2s ease;
-		font-family: "IBM Plex Sans", sans-serif;
-	}
-
-	.instrument-toggle.active {
-		border-color: rgba(255, 255, 255, 0.3);
-	}
-
-	.instrument-toggle.inactive {
-		opacity: 0.4;
-	}
-
-	.instrument-toggle:hover {
-		border-color: rgba(255, 255, 255, 0.4);
-		background: rgba(255, 255, 255, 0.02);
-	}
-
-	.instrument-color {
-		width: 20px;
-		height: 20px;
-		border-radius: 8px;
-		flex-shrink: 0;
-	}
-
-	.instrument-color.violin {
-		background: linear-gradient(45deg, #3398F1, #1164B6);
-		box-shadow: 0 0 8px rgba(51, 152, 241, 0.4);
-	}
-
-	.instrument-color.piano {
-		background: linear-gradient(45deg, #FF4F14, #C43B29);
-		box-shadow: 0 0 8px rgba(255, 79, 20, 0.4);
-	}
-
-	.instrument-color.accordion {
-		background: linear-gradient(45deg, #F8AE31, #E7A22E);
-		box-shadow: 0 0 8px rgba(248, 174, 49, 0.4);
-	}
-
-	.instrument-color.percussion {
-		background: #FFF4D2;
-		box-shadow: 0 0 8px rgba(255, 244, 210, 0.4);
-	}
-
-	.instrument-info {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-
-	.instrument-name {
-		font-size: 14px;
-		font-weight: 600;
-		color: white;
-	}
-
-	.instrument-depth {
-		font-size: 12px;
-		color: rgba(255, 255, 255, 0.7);
-	}
-
-	.instrument-info-item {
-		display: flex;
-		align-items: center;
-		gap: 16px;
-		padding: 20px;
-		background: transparent;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		border-radius: 4px;
-	}
-
-	.toggle-indicator {
-		width: 16px;
-		height: 16px;
-		border: 1px solid rgba(255, 255, 255, 0.3);
-		border-radius: 2px;
-		position: relative;
-		transition: all 0.2s ease;
-	}
-
-	.instrument-toggle.active .toggle-indicator {
-		border-color: white;
-		background: white;
-	}
-
-	.instrument-toggle.active .toggle-indicator::after {
-		content: '✓';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		color: #000;
-		font-size: 10px;
-		font-weight: bold;
 	}
 
 	/* Data Info */
