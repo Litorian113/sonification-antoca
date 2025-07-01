@@ -445,8 +445,8 @@
 		// Create geometry sized for the specific depth layer
 		const shockwaveGeometry = new THREE.SphereGeometry(
 			globeRadius + 0.02,
+			128,
 			64,
-			32,
 			0,
 			Math.PI * 2,
 			0,
@@ -547,8 +547,8 @@
 		// Create geometry for outer globe
 		const shockwaveGeometry = new THREE.SphereGeometry(
 			globeRadius + 0.05, // Slightly larger for prominence
+			128,
 			64,
-			32,
 			0,
 			Math.PI * 2,
 			0,
@@ -918,7 +918,7 @@
 			
 			if (bordersTexture) {
 				// Create a slightly larger sphere for borders overlay
-				const bordersGeometry = new THREE.SphereGeometry(7.01, 128, 128);
+				const bordersGeometry = new THREE.SphereGeometry(7.01, 256, 256);
 				
 				// Create material with the borders texture
 				const bordersMaterial = new THREE.MeshBasicMaterial({
@@ -1130,7 +1130,7 @@
 				const texture = await createTextureFromSVG(svgContent);
 				
 				if (texture) {
-					const bordersGeometry = new THREE.SphereGeometry(7.01, 128, 128);
+					const bordersGeometry = new THREE.SphereGeometry(7.01, 256, 256);
 					const bordersMaterial = new THREE.MeshBasicMaterial({
 						map: texture,
 						transparent: true,
@@ -1367,7 +1367,7 @@
 			// Create the three globe layers with subtle transparency
 			
 			// Outer globe (shallow earthquakes 0-30km) - completely transparent
-			const outerGeometry = new THREE.SphereGeometry(7, 128, 128);
+			const outerGeometry = new THREE.SphereGeometry(7, 256, 256);
 			const outerMaterial = new THREE.MeshBasicMaterial({
 				transparent: true,
 				opacity: 0.0,
@@ -1377,7 +1377,7 @@
 			scene.add(globe);
 
 			// Middle globe (medium earthquakes 30-100km) - very subtle orange tint
-			const middleGeometry = new THREE.SphereGeometry(6, 128, 128);
+			const middleGeometry = new THREE.SphereGeometry(6, 256, 256);
 			const middleMaterial = new THREE.MeshBasicMaterial({
 				color: 0xF8AE31, // Orange color matching the grid
 				transparent: true,
@@ -1389,7 +1389,7 @@
 			scene.add(middleGlobe);
 
 			// Inner globe (deep earthquakes >100km) - very subtle red tint
-			const innerGeometry = new THREE.SphereGeometry(5, 128, 128);
+			const innerGeometry = new THREE.SphereGeometry(5, 256, 256);
 			const innerMaterial = new THREE.MeshBasicMaterial({
 				color: 0xFF4F14, // Red color matching the grid
 				transparent: true,
