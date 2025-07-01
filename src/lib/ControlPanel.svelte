@@ -785,13 +785,13 @@
 	}
 
 	.depth-color-indicator.medium {
-		background: linear-gradient(45deg, #F8AE31, #E7A22E);
-		box-shadow: 0 0 6px rgba(248, 174, 49, 0.4);
+		background: linear-gradient(45deg, #FF4F14, #C43B29);
+		box-shadow: 0 0 6px rgba(255, 79, 20, 0.4);
 	}
 
 	.depth-color-indicator.deep {
-		background: linear-gradient(45deg, #FF4F14, #C43B29);
-		box-shadow: 0 0 6px rgba(255, 79, 20, 0.4);
+		background: linear-gradient(45deg, #F8AE31, #E7A22E);
+		box-shadow: 0 0 6px rgba(248, 174, 49, 0.4);
 	}
 
 	.depth-color-indicator.catastrophic {

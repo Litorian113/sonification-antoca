@@ -172,14 +172,14 @@
 		const intensity = (clampedMagnitude - minMagnitude) / (maxMagnitude - minMagnitude);
 
 		if (depth > 100) {
-			// Depth > 100: Accordion - Gradient from strong #FF4F14 to weak #C43B29 (RED)
-			const strongColor = new THREE.Color(0xFF4F14);
-			const weakColor = new THREE.Color(0xC43B29);
-			return strongColor.clone().lerp(weakColor, 1.0 - intensity);
-		} else if (depth >= 30) {
-			// Depth 30-100: Piano - Gradient from strong #F8AE31 to weak #E7A22E (ORANGE)
+			// Depth > 100: Accordion - Gradient from strong #F8AE31 to weak #E7A22E (ORANGE/YELLOW)
 			const strongColor = new THREE.Color(0xF8AE31);
 			const weakColor = new THREE.Color(0xE7A22E);
+			return strongColor.clone().lerp(weakColor, 1.0 - intensity);
+		} else if (depth >= 30) {
+			// Depth 30-100: Piano - Gradient from strong #FF4F14 to weak #C43B29 (RED)
+			const strongColor = new THREE.Color(0xFF4F14);
+			const weakColor = new THREE.Color(0xC43B29);
 			return strongColor.clone().lerp(weakColor, 1.0 - intensity);
 		} else {
 			// Depth 0-30: Violin - Gradient from strong #3398F1 to weak #1164B6 (BLUE)
@@ -837,13 +837,13 @@
 			},
 			{ 
 				radius: 6.0,    // Middle globe (medium earthquakes 30-100km)
-				color: 0xF8AE31, // Orange tint
+				color: 0xFF4F14, // Red tint (swapped from orange)
 				opacity: 0.10,
 				name: 'medium'
 			},
 			{ 
 				radius: 5.0,    // Inner globe (deep earthquakes >100km)
-				color: 0xFF4F14, // Red tint
+				color: 0xF8AE31, // Orange tint (swapped from red)
 				opacity: 0.08,
 				name: 'deep'
 			}
@@ -1391,10 +1391,10 @@
 			globe = new THREE.Mesh(outerGeometry, outerMaterial);
 			scene.add(globe);
 
-			// Middle globe (medium earthquakes 30-100km) - very subtle orange tint
+			// Middle globe (medium earthquakes 30-100km) - very subtle red tint
 			const middleGeometry = new THREE.SphereGeometry(6, 256, 256);
 			const middleMaterial = new THREE.MeshBasicMaterial({
-				color: 0xF8AE31, // Orange color matching the grid
+				color: 0xFF4F14, // Red color (swapped from orange)
 				transparent: true,
 				opacity: 0.03, // Very subtle
 				side: THREE.BackSide, // Show from inside
@@ -1403,10 +1403,10 @@
 			const middleGlobe = new THREE.Mesh(middleGeometry, middleMaterial);
 			scene.add(middleGlobe);
 
-			// Inner globe (deep earthquakes >100km) - very subtle red tint
+			// Inner globe (deep earthquakes >100km) - very subtle orange tint
 			const innerGeometry = new THREE.SphereGeometry(5, 256, 256);
 			const innerMaterial = new THREE.MeshBasicMaterial({
-				color: 0xFF4F14, // Red color matching the grid
+				color: 0xF8AE31, // Orange color (swapped from red)
 				transparent: true,
 				opacity: 0.04, // Slightly more visible than middle
 				side: THREE.BackSide, // Show from inside
