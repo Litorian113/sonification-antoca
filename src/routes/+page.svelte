@@ -16,6 +16,13 @@
 	
 	// Theme system
 	let isDarkMode = true; // Default to dark mode
+	
+	// Orbit toggle system
+	let orbitToggles = {
+		surface: 'violin', // 'violin' or 'clarinet'
+		middle: 'piano',   // 'piano' or 'saxophone'
+		deep: 'accordion'  // 'accordion' or 'brass'
+	};
 
 	onMount(() => {
 		mounted = true;
@@ -52,6 +59,19 @@
 
 	function scrollToTop() {
 		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
+	
+	// Orbit toggle functions
+	function toggleOrbitInstrument(layer: 'surface' | 'middle' | 'deep') {
+		if (layer === 'surface') {
+			orbitToggles.surface = orbitToggles.surface === 'violin' ? 'clarinet' : 'violin';
+		} else if (layer === 'middle') {
+			orbitToggles.middle = orbitToggles.middle === 'piano' ? 'saxophone' : 'piano';
+		} else if (layer === 'deep') {
+			orbitToggles.deep = orbitToggles.deep === 'accordion' ? 'brass' : 'accordion';
+		}
+		// Trigger reactivity
+		orbitToggles = { ...orbitToggles };
 	}
 </script>
 
@@ -271,26 +291,101 @@
 		<div class="orbiting-section">
 			<div class="orbiting-container">
 				<h3 class="orbiting-title">Instrument Layers</h3>
-				<div class="orbiting-circles">
-					<!-- Orbit paths -->
-					<div class="orbit-path orbit-outer"></div>
-					<div class="orbit-path orbit-middle"></div>
-					<div class="orbit-path orbit-inner"></div>
-					
-					<!-- Orbiting instruments -->
-					<div class="orbiting-item violin-orbit">
-						<img src="/img/violineIMG.png" alt="Violin - Surface Layer" />
-						<span class="orbit-label">Surface</span>
+				<p class="orbiting-description">
+					Each seismic layer is represented by a different instrument, which can be toggled to explore alternative soundscapes.
+				</p>
+				
+				<div class="orbiting-content">
+					<!-- Toggle Controls arranged in a 3x2 grid -->
+					<div class="orbit-toggles">
+						<!-- First row: Primary instruments -->
+						<button 
+							class="orbit-toggle violin-toggle {orbitToggles.surface === 'violin' ? 'active' : 'inactive'}"
+							on:click={() => toggleOrbitInstrument('surface')}
+							aria-label="Select violin for surface layer"
+							use:hoverShake
+						>
+							<img src="/img/violineIMG.png" alt="Violin" />
+						</button>
+						
+						<button 
+							class="orbit-toggle piano-toggle {orbitToggles.middle === 'piano' ? 'active' : 'inactive'}"
+							on:click={() => toggleOrbitInstrument('middle')}
+							aria-label="Select piano for middle layer"
+							use:hoverShake
+						>
+							<img src="/img/pianoIMG.png" alt="Piano" />
+						</button>
+						
+						<button 
+							class="orbit-toggle accordion-toggle {orbitToggles.deep === 'accordion' ? 'active' : 'inactive'}"
+							on:click={() => toggleOrbitInstrument('deep')}
+							aria-label="Select accordion for deep layer"
+							use:hoverShake
+						>
+							<img src="/img/accordionIMG.png" alt="Accordion" />
+						</button>
+						
+						<!-- Second row: Alternative instruments -->
+						<button 
+							class="orbit-toggle clarinet-toggle {orbitToggles.surface === 'clarinet' ? 'active' : 'inactive'}"
+							on:click={() => toggleOrbitInstrument('surface')}
+							aria-label="Select clarinet for surface layer"
+							use:hoverShake
+						>
+							<img src="/additionalInstruments/clarinette.png" alt="Clarinet" />
+						</button>
+						
+						<button 
+							class="orbit-toggle saxophone-toggle {orbitToggles.middle === 'saxophone' ? 'active' : 'inactive'}"
+							on:click={() => toggleOrbitInstrument('middle')}
+							aria-label="Select saxophone for middle layer"
+							use:hoverShake
+						>
+							<img src="/additionalInstruments/saxGuy.png" alt="Saxophone" />
+						</button>
+						
+						<button 
+							class="orbit-toggle brass-toggle {orbitToggles.deep === 'brass' ? 'active' : 'inactive'}"
+							on:click={() => toggleOrbitInstrument('deep')}
+							aria-label="Select brass ensemble for deep layer"
+							use:hoverShake
+						>
+							<img src="/additionalInstruments/brassEnsemble.png" alt="Brass Ensemble" />
+						</button>
 					</div>
 					
-					<div class="orbiting-item piano-orbit">
-						<img src="/img/pianoIMG.png" alt="Piano - Middle Layer" />
-						<span class="orbit-label">Middle</span>
-					</div>
-					
-					<div class="orbiting-item accordion-orbit">
-						<img src="/img/accordionIMG.png" alt="Accordion - Deep Layer" />
-						<span class="orbit-label">Deep</span>
+					<!-- Orbiting Animation -->
+					<div class="orbiting-circles">
+						<!-- Orbit paths -->
+						<div class="orbit-path orbit-outer"></div>
+						<div class="orbit-path orbit-middle"></div>
+						<div class="orbit-path orbit-inner"></div>
+						
+						<!-- Orbiting instruments -->
+						<div class="orbiting-item {orbitToggles.surface === 'violin' ? 'violin-orbit' : 'clarinet-orbit'}">
+							<img 
+								src={orbitToggles.surface === 'violin' ? '/img/violineIMG.png' : '/additionalInstruments/clarinette.png'} 
+								alt={orbitToggles.surface === 'violin' ? 'Violin - Surface Layer' : 'Clarinet - Surface Layer'}
+							/>
+							<span class="orbit-label">Surface</span>
+						</div>
+						
+						<div class="orbiting-item {orbitToggles.middle === 'piano' ? 'piano-orbit' : 'saxophone-orbit'}">
+							<img 
+								src={orbitToggles.middle === 'piano' ? '/img/pianoIMG.png' : '/additionalInstruments/saxGuy.png'} 
+								alt={orbitToggles.middle === 'piano' ? 'Piano - Middle Layer' : 'Saxophone - Middle Layer'}
+							/>
+							<span class="orbit-label">Middle</span>
+						</div>
+						
+						<div class="orbiting-item {orbitToggles.deep === 'accordion' ? 'accordion-orbit' : 'brass-orbit'}">
+							<img 
+								src={orbitToggles.deep === 'accordion' ? '/img/accordionIMG.png' : '/additionalInstruments/brassEnsemble.png'} 
+								alt={orbitToggles.deep === 'accordion' ? 'Accordion - Deep Layer' : 'Brass Ensemble - Deep Layer'}
+							/>
+							<span class="orbit-label">Deep</span>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -858,8 +953,28 @@
 		font-size: 2rem;
 		font-weight: 300;
 		color: var(--text-primary);
-		margin: 0 0 4rem 0;
+		margin: 0 0 1rem 0;
 		transition: color 0.3s ease;
+	}
+	
+	.orbiting-description {
+		font-family: 'IBM Plex Sans', sans-serif;
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		margin: 0 0 3rem 0;
+		line-height: 1.6;
+		max-width: 500px;
+		margin-left: auto;
+		margin-right: auto;
+		transition: color 0.3s ease;
+	}
+	
+	.orbiting-content {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 3rem;
+		flex-wrap: wrap;
 	}
 
 	.orbiting-circles {
@@ -926,7 +1041,7 @@
 	}
 
 	.orbiting-item:hover {
-		border-color: var(--accent-color);
+			/* border-color: var(--accent-color); */
 		transform: scale(1.1);
 		z-index: 10;
 	}
@@ -986,6 +1101,140 @@
 		--orbit-radius: 80px;
 		animation: orbit 10s linear infinite;
 		border-color: #F8AE31;
+	}
+	
+	/* Alternative instrument orbits */
+	.clarinet-orbit {
+		--orbit-radius: 240px;
+		animation: orbit 20s linear infinite;
+		border-color: #3398F1;
+	}
+	
+	.saxophone-orbit {
+		--orbit-radius: 160px;
+		animation: orbit 15s linear infinite;
+		border-color: #FF4F14;
+	}
+	
+	.brass-orbit {
+		--orbit-radius: 80px;
+		animation: orbit 10s linear infinite;
+		border-color: #F8AE31;
+	}
+	
+	/* Orbit Toggle Controls */
+	.orbit-toggles {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		grid-template-rows: repeat(2, 1fr);
+		gap: 1.5rem;
+		max-width: 300px;
+		margin: 0 auto 2rem;
+		justify-items: center;
+		align-items: center;
+	}
+	
+	.orbit-toggle {
+		position: relative;
+		width: 80px;
+		height: 80px;
+		background: var(--bg-primary);
+		border: 2px solid var(--border-color);
+		border-radius: 50%;
+		padding: 12px;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 4px 12px var(--shadow-color);
+		overflow: hidden;
+	}
+	
+	.orbit-toggle:hover {
+		transform: scale(1.1);
+		box-shadow: 0 6px 20px var(--shadow-color);
+	}
+	
+	.orbit-toggle:active {
+		transform: scale(0.95);
+	}
+	
+	.orbit-toggle img {
+		width: 32px;
+		height: 32px;
+		object-fit: contain;
+		transition: all 0.3s ease;
+	}
+	
+	/* Active states with full color and opacity */
+	.orbit-toggle.active {
+		opacity: 1;
+	}
+	
+	.orbit-toggle.active img {
+		opacity: 1;
+		filter: grayscale(0%);
+	}
+	
+	/* Inactive states with reduced opacity and slight grayscale */
+	.orbit-toggle.inactive {
+		opacity: 0.4;
+	}
+	
+	.orbit-toggle.inactive img {
+		opacity: 0.6;
+		filter: grayscale(30%);
+	}
+	
+	.orbit-toggle.inactive:hover {
+		opacity: 0.7;
+	}
+	
+	.orbit-toggle.inactive:hover img {
+		opacity: 0.8;
+		filter: grayscale(10%);
+	}
+	
+	/* Specific instrument color coding for active states */
+	.violin-toggle.active,
+	.clarinet-toggle.active {
+		border-color: #3398F1;
+		background: rgba(51, 152, 241, 0.1);
+	}
+	
+	.piano-toggle.active,
+	.saxophone-toggle.active {
+		border-color: #FF4F14;
+		background: rgba(255, 79, 20, 0.1);
+	}
+	
+	.accordion-toggle.active,
+	.brass-toggle.active {
+		border-color: #F8AE31;
+		background: rgba(248, 174, 49, 0.1);
+	}
+	
+	/* Enhanced hover effects for active instruments */
+	.violin-toggle.active:hover,
+	.clarinet-toggle.active:hover {
+		border-color: #3398F1;
+		background: rgba(51, 152, 241, 0.2);
+		box-shadow: 0 6px 20px rgba(51, 152, 241, 0.3);
+	}
+	
+	.piano-toggle.active:hover,
+	.saxophone-toggle.active:hover {
+		border-color: #FF4F14;
+		background: rgba(255, 79, 20, 0.2);
+		box-shadow: 0 6px 20px rgba(255, 79, 20, 0.3);
+	}
+	
+	.accordion-toggle.active:hover,
+	.brass-toggle.active:hover {
+		border-color: #F8AE31;
+		background: rgba(248, 174, 49, 0.2);
+		box-shadow: 0 6px 20px rgba(248, 174, 49, 0.3);
 	}
 
 	/* CTA Section */
@@ -1205,6 +1454,18 @@
 		.accordion-orbit {
 			--orbit-radius: 70px;
 		}
+		
+		.clarinet-orbit {
+			--orbit-radius: 190px;
+		}
+
+		.saxophone-orbit {
+			--orbit-radius: 130px;
+		}
+
+		.brass-orbit {
+			--orbit-radius: 70px;
+		}
 
 		.orbiting-item {
 			width: 70px;
@@ -1215,6 +1476,37 @@
 		.orbiting-item img {
 			width: 28px;
 			height: 28px;
+		}
+		
+		.orbit-toggle {
+			width: 70px;
+			height: 70px;
+			padding: 10px;
+		}
+		
+		.orbit-toggle img {
+			width: 28px;
+			height: 28px;
+		}
+		
+		.orbiting-content {
+			gap: 2rem;
+		}
+		
+		.orbit-toggles {
+			gap: 1.2rem;
+			max-width: 250px;
+		}
+		
+		.orbit-toggle {
+			width: 60px;
+			height: 60px;
+			padding: 8px;
+		}
+		
+		.orbit-toggle img {
+			width: 24px;
+			height: 24px;
 		}
 	}
 
@@ -1309,6 +1601,18 @@
 		.accordion-orbit {
 			--orbit-radius: 60px;
 		}
+		
+		.clarinet-orbit {
+			--orbit-radius: 140px;
+		}
+
+		.saxophone-orbit {
+			--orbit-radius: 100px;
+		}
+
+		.brass-orbit {
+			--orbit-radius: 60px;
+		}
 
 		.orbiting-item {
 			width: 60px;
@@ -1324,6 +1628,43 @@
 		.orbit-label {
 			font-size: 7px;
 			margin-top: 2px;
+		}
+		
+		.orbit-toggle {
+			width: 60px;
+			height: 60px;
+			padding: 8px;
+		}
+		
+		.orbit-toggle img {
+			width: 24px;
+			height: 24px;
+		}
+		
+		.orbiting-content {
+			flex-direction: column;
+			gap: 1.5rem;
+		}
+		
+		.orbit-toggles {
+			gap: 1rem;
+			max-width: 200px;
+		}
+		
+		.orbit-toggle {
+			width: 50px;
+			height: 50px;
+			padding: 6px;
+		}
+		
+		.orbit-toggle img {
+			width: 20px;
+			height: 20px;
+		}
+		
+		.orbiting-description {
+			font-size: 0.8rem;
+			margin-bottom: 2rem;
 		}
 	}
 </style>
