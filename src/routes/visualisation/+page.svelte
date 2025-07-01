@@ -924,7 +924,7 @@
 				const bordersMaterial = new THREE.MeshBasicMaterial({
 					map: bordersTexture,
 					transparent: true,
-					opacity: 0.6,
+					opacity: 0.8, // Erhöhte Opazität für bessere Sichtbarkeit
 					side: THREE.FrontSide,
 					depthWrite: false,
 					blending: THREE.NormalBlending,
@@ -986,20 +986,24 @@
 		try {
 			// Create high-resolution canvas for world map
 			const canvas = document.createElement('canvas');
-			canvas.width = 2048;
-			canvas.height = 1024;
+			canvas.width = 4096;  // Erhöht von 2048
+			canvas.height = 2048; // Erhöht von 1024
 			const ctx = canvas.getContext('2d');
 			
 			if (!ctx) {
 				throw new Error("Could not get 2D context");
 			}
 
+			// Enable high-quality rendering
+			ctx.imageSmoothingEnabled = true;
+			ctx.imageSmoothingQuality = 'high';
+
 			// Clear with transparent background
 			ctx.clearRect(0, 0, canvas.width, canvas.height);
 			
-			// Set up drawing style for country borders
-			ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-			ctx.lineWidth = 1;
+			// Set up drawing style for country borders with higher quality
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; // Erhöhte Opazität für bessere Sichtbarkeit
+			ctx.lineWidth = 2; // Erhöhte Linienstärke
 			ctx.lineCap = 'round';
 			ctx.lineJoin = 'round';
 			
@@ -1036,6 +1040,8 @@
 			texture.magFilter = THREE.LinearFilter;
 			texture.minFilter = THREE.LinearMipmapLinearFilter;
 			texture.flipY = false; // Important for proper orientation
+			texture.generateMipmaps = true; // Bessere Qualität bei verschiedenen Distanzen
+			texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Maximale anisotrope Filterung
 			
 			return texture;
 		} catch (error) {
@@ -1190,11 +1196,15 @@
 	async function createTextureFromSVG(svgContent: string): Promise<THREE.Texture | null> {
 		try {
 			const canvas = document.createElement('canvas');
-			canvas.width = 2048;
-			canvas.height = 1024;
+			canvas.width = 4096;  // Erhöht von 2048
+			canvas.height = 2048; // Erhöht von 1024
 			const ctx = canvas.getContext('2d');
 			
 			if (!ctx) return null;
+
+			// Enable high-quality rendering
+			ctx.imageSmoothingEnabled = true;
+			ctx.imageSmoothingQuality = 'high';
 
 			const img = new Image();
 			const svgBlob = new Blob([svgContent], { type: 'image/svg+xml' });
@@ -1209,7 +1219,11 @@
 					const texture = new THREE.CanvasTexture(canvas);
 					texture.wrapS = THREE.RepeatWrapping;
 					texture.wrapT = THREE.ClampToEdgeWrapping;
+					texture.magFilter = THREE.LinearFilter;
+					texture.minFilter = THREE.LinearMipmapLinearFilter;
 					texture.flipY = false;
+					texture.generateMipmaps = true; // Bessere Qualität
+					texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // Maximale anisotrope Filterung
 					
 					resolve(texture);
 				};
