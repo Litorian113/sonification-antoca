@@ -6,6 +6,7 @@
 	// Props - alle Control-Zustände werden von der Parent-Komponente verwaltet
 	export let isPlaying = false;
 	export let isGlobeRotating = true;
+	export let isMapVisible = true; // Neuer Prop für Map-Sichtbarkeit
 	export let animationSpeed = 150;
 	export let instrumentEnabled = {
 		accordion: true,
@@ -38,6 +39,10 @@
 
 	function handleClearDots() {
 		dispatch('clearDots');
+	}
+
+	function handleMapToggle() {
+		dispatch('mapToggle');
 	}
 
 	function handleSpeedChange() {
@@ -103,38 +108,48 @@
 
 <!-- Side Panel -->
 <aside class="control-panel" class:open={isPanelOpen}>
-	<div class="panel-header">
-		<h2>Control Panel</h2>
-		<div class="header-accent"></div>
-	</div>
+	<div class="panel-header-spacer"></div>
 
 	<div class="panel-content">
 		<!-- Playback Controls -->
 		<section class="control-section">
 			<h3>Playback</h3>
 			<div class="control-group">
-				<button
-					class="control-btn primary"
-					class:playing={isPlaying}
-					on:click={handlePlayToggle}
-				>
-					{isPlaying ? "Stop Sonification" : "Play Sonification"}
-				</button>
+				<!-- Erste Reihe: Play und Rotation -->
+				<div class="button-row">
+					<button
+						class="control-btn primary"
+						class:playing={isPlaying}
+						on:click={handlePlayToggle}
+					>
+						{isPlaying ? "Stop" : "Play"}
+					</button>
 
-				<button
-					class="control-btn secondary"
-					on:click={handleRotationToggle}
-				>
-					{isGlobeRotating ? "Stop Rotation" : "Start Rotation"}
-				</button>
+					<button
+						class="control-btn secondary"
+						on:click={handleRotationToggle}
+					>
+						{isGlobeRotating ? "Stop Rotation" : "Start Rotation"}
+					</button>
+				</div>
 
-				<button
-					class="control-btn tertiary"
-					on:click={handleClearDots}
-					disabled={isPlaying}
-				>
-					Clear Epicenter Dots
-				</button>
+				<!-- Zweite Reihe: Clear Dots und Map Toggle -->
+				<div class="button-row">
+					<button
+						class="control-btn tertiary"
+						on:click={handleClearDots}
+						disabled={isPlaying}
+					>
+						Clear Dots
+					</button>
+
+					<button
+						class="control-btn secondary"
+						on:click={handleMapToggle}
+					>
+						{isMapVisible ? "Hide Map" : "Show Map"}
+					</button>
+				</div>
 			</div>
 		</section>
 
@@ -490,23 +505,9 @@
 		transform: translateX(0);
 	}
 
-	.panel-header {
-		padding: 100px 40px 40px;
+	.panel-header-spacer {
+		padding: 100px 0 0;
 		border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-		position: relative;
-	}
-
-	.panel-header h2 {
-		margin: 0;
-		font-size: 22px;
-		font-weight: 400;
-		color: white;
-		letter-spacing: 0.5px;
-		font-family: "IBM Plex Sans", sans-serif;
-	}
-
-	.header-accent {
-		display: none;
 	}
 
 	.panel-content {
@@ -539,6 +540,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
+	}
+
+	.button-row {
+		display: flex;
+		gap: 12px;
+	}
+
+	.button-row .control-btn {
+		flex: 1;
 	}
 
 	.control-btn {

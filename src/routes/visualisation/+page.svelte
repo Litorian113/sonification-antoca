@@ -21,6 +21,7 @@
 	// Globe rotation settings
 	let globeRotationSpeed = 0.005; // Rotation speed for globes
 	let isGlobeRotating = true; // Enable/disable globe rotation
+	let isMapVisible = true; // Enable/disable world map visibility
 	let gridGroup: THREE.Group; // Reference to the grid lines
 	let persistentDotsGroup: THREE.Group; // Reference to persistent dots group
 	let shockwavesGroup: THREE.Group; // Reference to shockwaves group for rotation sync
@@ -1602,6 +1603,13 @@
 		isGlobeRotating = !isGlobeRotating;
 	}
 
+	function handleMapToggle() {
+		isMapVisible = !isMapVisible;
+		if (countryBordersGroup) {
+			countryBordersGroup.visible = isMapVisible;
+		}
+	}
+
 	function handleClearDots() {
 		clearPersistentDots();
 	}
@@ -1622,6 +1630,10 @@
 	function handleAlternativeInstrumentToggle(event: CustomEvent<{type: 'deep' | 'medium' | 'shallow' | 'catastrophic'}>) {
 		const { type } = event.detail;
 		useAlternativeInstruments[type] = !useAlternativeInstruments[type];
+	}
+
+	function handleMapToggleEvent() {
+		handleMapToggle();
 	}
 </script>
 
@@ -1658,6 +1670,7 @@
 	<ControlPanel
 		{isPlaying}
 		{isGlobeRotating}
+		{isMapVisible}
 		{animationSpeed}
 		{instrumentEnabled}
 		{useAlternativeInstruments}
@@ -1668,6 +1681,7 @@
 		{selectedYear}
 		on:playToggle={handlePlayToggle}
 		on:rotationToggle={handleRotationToggle}
+		on:mapToggle={handleMapToggleEvent}
 		on:clearDots={handleClearDots}
 		on:speedChange={handleSpeedChange}
 		on:instrumentToggle={handleInstrumentToggle}
