@@ -17,6 +17,12 @@
 	export let minYear = 2010;
 	export let maxYear = 2016;
 	export let selectedYear = 2010;
+	export let useAlternativeInstruments: {
+		deep: boolean;
+		medium: boolean;
+		shallow: boolean;
+		catastrophic: boolean;
+	};
 
 	// Side panel state
 	let isPanelOpen = true;
@@ -46,8 +52,29 @@
 		dispatch('yearChange', selectedYear);
 	}
 
+	function handleAlternativeInstrumentToggle(type: 'deep' | 'medium' | 'shallow' | 'catastrophic') {
+		dispatch('alternativeInstrumentToggle', { type });
+	}
+
 	function togglePanel() {
 		isPanelOpen = !isPanelOpen;
+	}
+
+	// Check if all instruments are disabled
+	$: allInstrumentsDisabled = !instrumentEnabled.accordion && !instrumentEnabled.piano && !instrumentEnabled.violin;
+
+	function toggleAllInstruments() {
+		if (allInstrumentsDisabled) {
+			// Enable all instruments
+			dispatch('instrumentToggle', 'accordion');
+			dispatch('instrumentToggle', 'piano'); 
+			dispatch('instrumentToggle', 'violin');
+		} else {
+			// Disable all instruments that are currently enabled
+			if (instrumentEnabled.accordion) dispatch('instrumentToggle', 'accordion');
+			if (instrumentEnabled.piano) dispatch('instrumentToggle', 'piano');
+			if (instrumentEnabled.violin) dispatch('instrumentToggle', 'violin');
+		}
 	}
 </script>
 
@@ -154,51 +181,154 @@
 			</div>
 		</section>
 
-		<!-- Instrument Filters -->
+		<!-- Instrument Controls -->
 		<section class="control-section">
-			<h3>Instrument Layers</h3>
-			<div class="instrument-grid">
-				<button
-					class="instrument-toggle {instrumentEnabled.violin ? 'active' : 'inactive'}"
-					on:click={() => handleInstrumentToggle('violin')}
-				>
-					<div class="instrument-color violin"></div>
-					<div class="instrument-info">
-						<span class="instrument-name">Violin</span>
-						<span class="instrument-depth">0-30m</span>
-					</div>
-					<div class="toggle-indicator"></div>
-				</button>
+			<h3>Instruments</h3>
+			<div class="instrument-controls">
+				<div class="instrument-buttons">
+					<button
+						class="instrument-btn {instrumentEnabled.violin ? 'active' : 'inactive'}"
+						on:click={() => handleInstrumentToggle('violin')}
+						title="{useAlternativeInstruments.shallow ? 'Clarinet' : 'Violin'} (Shallow: 0-30km)"
+					>
+						<img src="{useAlternativeInstruments.shallow ? '/additionalInstruments/clarinette.png' : '/img/violineIMG.png'}" alt="{useAlternativeInstruments.shallow ? 'Clarinet' : 'Violin'}" class="instrument-image">
+					</button>
 
-				<button
-					class="instrument-toggle {instrumentEnabled.piano ? 'active' : 'inactive'}"
-					on:click={() => handleInstrumentToggle('piano')}
-				>
-					<div class="instrument-color piano"></div>
-					<div class="instrument-info">
-						<span class="instrument-name">Piano</span>
-						<span class="instrument-depth">30-100m</span>
-					</div>
-					<div class="toggle-indicator"></div>
-				</button>
+					<button
+						class="instrument-btn {instrumentEnabled.piano ? 'active' : 'inactive'}"
+						on:click={() => handleInstrumentToggle('piano')}
+						title="{useAlternativeInstruments.medium ? 'Saxophone' : 'Piano'} (Medium: 30-100km)"
+					>
+						<img src="{useAlternativeInstruments.medium ? '/additionalInstruments/saxGuy.png' : '/img/pianoIMG.png'}" alt="{useAlternativeInstruments.medium ? 'Saxophone' : 'Piano'}" class="instrument-image">
+					</button>
 
-				<button
-					class="instrument-toggle {instrumentEnabled.accordion ? 'active' : 'inactive'}"
-					on:click={() => handleInstrumentToggle('accordion')}
-				>
-					<div class="instrument-color accordion"></div>
-					<div class="instrument-info">
-						<span class="instrument-name">Accordion</span>
-						<span class="instrument-depth">>100m</span>
-					</div>
-					<div class="toggle-indicator"></div>
-				</button>
+					<button
+						class="instrument-btn {instrumentEnabled.accordion ? 'active' : 'inactive'}"
+						on:click={() => handleInstrumentToggle('accordion')}
+						title="{useAlternativeInstruments.deep ? 'Brass Ensemble' : 'Accordion'} (Deep: >100km)"
+					>
+						<img src="{useAlternativeInstruments.deep ? '/additionalInstruments/brassEnsemble.png' : '/img/accordionIMG.png'}" alt="{useAlternativeInstruments.deep ? 'Brass Ensemble' : 'Accordion'}" class="instrument-image">
+					</button>
 
-				<div class="instrument-info-item">
-					<div class="instrument-color percussion"></div>
-					<div class="instrument-info">
-						<span class="instrument-name">Percussion</span>
-						<span class="instrument-depth">Magnitude 8+</span>
+					<button
+						class="instrument-btn percussion"
+						title="{useAlternativeInstruments.catastrophic ? 'Gong' : 'Percussion'} (Catastrophic: Magnitude 8+)"
+						disabled
+					>
+						<img src="{useAlternativeInstruments.catastrophic ? '/additionalInstruments/gong.png' : '/img/concussion.png'}" alt="{useAlternativeInstruments.catastrophic ? 'Gong' : 'Percussion'}" class="instrument-image">
+					</button>
+				</div>
+				
+				<button
+					class="toggle-all-btn"
+					on:click={toggleAllInstruments}
+					title={allInstrumentsDisabled ? "Enable all instruments" : "Disable all instruments"}
+				>
+					{allInstrumentsDisabled ? "Enable All" : "Disable All"}
+				</button>
+			</div>
+
+			<!-- Alternative Instruments -->
+			<div class="alternative-instruments">
+				<!-- Shallow Earthquakes (0-30km) -->
+				<div class="depth-section">
+					<div class="depth-header">
+						<div class="depth-color-indicator shallow"></div>
+						<span class="depth-label">Shallow (0-30km)</span>
+					</div>
+					<div class="instrument-toggle-row">
+						<button
+							class="alt-instrument-toggle {!useAlternativeInstruments.shallow ? 'active' : 'inactive'}"
+							on:click={() => useAlternativeInstruments.shallow && handleAlternativeInstrumentToggle('shallow')}
+							disabled={!instrumentEnabled.violin}
+						>
+							<img src="/img/violineIMG.png" alt="Violin" class="alt-instrument-image">
+							<span class="instrument-label">Violin</span>
+						</button>
+						<button
+							class="alt-instrument-toggle {useAlternativeInstruments.shallow ? 'active' : 'inactive'}"
+							on:click={() => !useAlternativeInstruments.shallow && handleAlternativeInstrumentToggle('shallow')}
+							disabled={!instrumentEnabled.violin}
+						>
+							<img src="/additionalInstruments/clarinette.png" alt="Clarinet" class="alt-instrument-image">
+							<span class="instrument-label">Clarinet</span>
+						</button>
+					</div>
+				</div>
+
+				<!-- Medium Earthquakes (30-100km) -->
+				<div class="depth-section">
+					<div class="depth-header">
+						<div class="depth-color-indicator medium"></div>
+						<span class="depth-label">Medium (30-100km)</span>
+					</div>
+					<div class="instrument-toggle-row">
+						<button
+							class="alt-instrument-toggle {!useAlternativeInstruments.medium ? 'active' : 'inactive'}"
+							on:click={() => useAlternativeInstruments.medium && handleAlternativeInstrumentToggle('medium')}
+							disabled={!instrumentEnabled.piano}
+						>
+							<img src="/img/pianoIMG.png" alt="Piano" class="alt-instrument-image">
+							<span class="instrument-label">Piano</span>
+						</button>
+						<button
+							class="alt-instrument-toggle {useAlternativeInstruments.medium ? 'active' : 'inactive'}"
+							on:click={() => !useAlternativeInstruments.medium && handleAlternativeInstrumentToggle('medium')}
+							disabled={!instrumentEnabled.piano}
+						>
+							<img src="/additionalInstruments/saxGuy.png" alt="Saxophone" class="alt-instrument-image">
+							<span class="instrument-label">Saxophone</span>
+						</button>
+					</div>
+				</div>
+
+				<!-- Deep Earthquakes (>100km) -->
+				<div class="depth-section">
+					<div class="depth-header">
+						<div class="depth-color-indicator deep"></div>
+						<span class="depth-label">Deep (>100km)</span>
+					</div>
+					<div class="instrument-toggle-row">
+						<button
+							class="alt-instrument-toggle {!useAlternativeInstruments.deep ? 'active' : 'inactive'}"
+							on:click={() => useAlternativeInstruments.deep && handleAlternativeInstrumentToggle('deep')}
+							disabled={!instrumentEnabled.accordion}
+						>
+							<img src="/img/accordionIMG.png" alt="Accordion" class="alt-instrument-image">
+							<span class="instrument-label">Accordion</span>
+						</button>
+						<button
+							class="alt-instrument-toggle {useAlternativeInstruments.deep ? 'active' : 'inactive'}"
+							on:click={() => !useAlternativeInstruments.deep && handleAlternativeInstrumentToggle('deep')}
+							disabled={!instrumentEnabled.accordion}
+						>
+							<img src="/additionalInstruments/brassEnsemble.png" alt="Brass Ensemble" class="alt-instrument-image">
+							<span class="instrument-label">Brass</span>
+						</button>
+					</div>
+				</div>
+
+				<!-- Catastrophic Earthquakes (Magnitude 8+) -->
+				<div class="depth-section">
+					<div class="depth-header">
+						<div class="depth-color-indicator catastrophic"></div>
+						<span class="depth-label">Catastrophic (8+ Magnitude)</span>
+					</div>
+					<div class="instrument-toggle-row">
+						<button
+							class="alt-instrument-toggle {!useAlternativeInstruments.catastrophic ? 'active' : 'inactive'}"
+							on:click={() => useAlternativeInstruments.catastrophic && handleAlternativeInstrumentToggle('catastrophic')}
+						>
+							<img src="/img/concussion.png" alt="Percussion" class="alt-instrument-image">
+							<span class="instrument-label">Percussion</span>
+						</button>
+						<button
+							class="alt-instrument-toggle {useAlternativeInstruments.catastrophic ? 'active' : 'inactive'}"
+							on:click={() => !useAlternativeInstruments.catastrophic && handleAlternativeInstrumentToggle('catastrophic')}
+						>
+							<img src="/additionalInstruments/gong.png" alt="Gong" class="alt-instrument-image">
+							<span class="instrument-label">Gong</span>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -515,7 +645,280 @@
 		border: 1px solid rgba(51, 152, 241, 0.3);
 	}
 
-	/* Instrument Grid */
+	/* Instrument Controls */
+	.instrument-controls {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.instrument-buttons {
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		gap: 12px;
+	}
+
+	.instrument-btn {
+		width: 60px;
+		height: 60px;
+		background: transparent;
+		border: 2px solid rgba(255, 255, 255, 0.2);
+		border-radius: 8px;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+		overflow: hidden;
+	}
+
+	.instrument-btn:hover:not(:disabled) {
+		border-color: rgba(255, 255, 255, 0.4);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+	}
+
+	.instrument-btn.active {
+		border-color: #3398F1;
+		background: rgba(51, 152, 241, 0.1);
+		box-shadow: 0 0 20px rgba(51, 152, 241, 0.3);
+	}
+
+	.instrument-btn.inactive {
+		opacity: 0.4;
+		filter: grayscale(0.7);
+	}
+
+	.instrument-btn.percussion {
+		opacity: 0.6;
+		cursor: not-allowed;
+		border-color: rgba(255, 244, 210, 0.3);
+	}
+
+	.instrument-btn.percussion:hover {
+		transform: none;
+		box-shadow: none;
+		border-color: rgba(255, 244, 210, 0.3);
+	}
+
+	.instrument-image {
+		width: 36px;
+		height: 36px;
+		object-fit: contain;
+		transition: all 0.3s ease;
+	}
+
+	.instrument-btn.active .instrument-image {
+		filter: brightness(1.2) saturate(1.2);
+	}
+
+	.instrument-btn.inactive .instrument-image {
+		filter: grayscale(0.7) brightness(0.6);
+	}
+
+	.toggle-all-btn {
+		width: 100%;
+		padding: 12px 16px;
+		background: transparent;
+		border: 1px solid rgba(255, 255, 255, 0.2);
+		border-radius: 6px;
+		cursor: pointer;
+		color: rgba(255, 255, 255, 0.8);
+		font-size: 12px;
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 1px;
+		transition: all 0.2s ease;
+		font-family: "IBM Plex Sans", sans-serif;
+	}
+
+	.toggle-all-btn:hover {
+		border-color: rgba(255, 255, 255, 0.4);
+		background: rgba(255, 255, 255, 0.05);
+		color: rgba(255, 255, 255, 1);
+	}
+
+	/* Alternative Instruments */
+	.alternative-instruments {
+		margin-top: 16px;
+		padding-top: 16px;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.depth-section {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.depth-header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 4px;
+	}
+
+	.depth-color-indicator {
+		width: 12px;
+		height: 12px;
+		border-radius: 6px;
+		flex-shrink: 0;
+	}
+
+	.depth-color-indicator.shallow {
+		background: linear-gradient(45deg, #3398F1, #1164B6);
+		box-shadow: 0 0 6px rgba(51, 152, 241, 0.4);
+	}
+
+	.depth-color-indicator.medium {
+		background: linear-gradient(45deg, #FF4F14, #C43B29);
+		box-shadow: 0 0 6px rgba(255, 79, 20, 0.4);
+	}
+
+	.depth-color-indicator.deep {
+		background: linear-gradient(45deg, #F8AE31, #E7A22E);
+		box-shadow: 0 0 6px rgba(248, 174, 49, 0.4);
+	}
+
+	.depth-color-indicator.catastrophic {
+		background: #FFF4D2;
+		box-shadow: 0 0 6px rgba(255, 244, 210, 0.4);
+	}
+
+	.depth-label {
+		font-size: 11px;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.8);
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		font-family: "IBM Plex Sans", sans-serif;
+	}
+
+	.instrument-toggle-row {
+		display: flex;
+		gap: 6px;
+	}
+
+	.alt-instrument-toggle {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 12px;
+		background: transparent;
+		border: 1px solid rgba(255, 255, 255, 0.15);
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		font-family: "IBM Plex Sans", sans-serif;
+	}
+
+	.alt-instrument-toggle:hover:not(:disabled) {
+		border-color: rgba(255, 255, 255, 0.3);
+		background: rgba(255, 255, 255, 0.05);
+	}
+
+	.alt-instrument-toggle.active {
+		border-color: #3398F1;
+		background: rgba(51, 152, 241, 0.1);
+		box-shadow: 0 0 15px rgba(51, 152, 241, 0.2);
+	}
+
+	.alt-instrument-toggle.inactive {
+		opacity: 0.6;
+	}
+
+	.alt-instrument-toggle:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
+		filter: grayscale(0.7);
+	}
+
+	.alt-instrument-toggle:disabled:hover {
+		border-color: rgba(255, 255, 255, 0.15);
+		background: transparent;
+	}
+
+	.alt-instrument-image {
+		width: 20px;
+		height: 20px;
+		object-fit: contain;
+		transition: all 0.3s ease;
+		flex-shrink: 0;
+	}
+
+	.alt-instrument-toggle.active .alt-instrument-image {
+		filter: brightness(1.2) saturate(1.2);
+	}
+
+	.alt-instrument-toggle.inactive .alt-instrument-image {
+		filter: grayscale(0.3) brightness(0.8);
+	}
+
+	.alt-instrument-toggle:disabled .alt-instrument-image {
+		filter: grayscale(1) brightness(0.5);
+	}
+
+	.instrument-label {
+		font-size: 11px;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.8);
+		transition: all 0.3s ease;
+	}
+
+	.alt-instrument-toggle.active .instrument-label {
+		color: #3398F1;
+		font-weight: 600;
+	}
+
+	.alt-instrument-toggle:disabled .instrument-label {
+		color: rgba(255, 255, 255, 0.4);
+	}
+
+	/* Responsive Design for Alternative Instruments */
+	@media (max-width: 768px) {
+		.alternative-instruments {
+			gap: 12px;
+		}
+
+		.depth-label {
+			font-size: 10px;
+		}
+
+		.alt-instrument-toggle {
+			padding: 8px 10px;
+			gap: 6px;
+		}
+
+		.alt-instrument-image {
+			width: 16px;
+			height: 16px;
+		}
+
+		.instrument-label {
+			font-size: 10px;
+		}
+
+		.depth-color-indicator {
+			width: 10px;
+			height: 10px;
+		}
+	}
+
+	/* Remove old styles */
+	.alt-instrument-buttons {
+		display: none;
+	}
+
+	.alt-instrument-btn {
+		display: none;
+	}
+
+	/* Instrument Grid (Old styles to keep existing compatibility) */
 	.instrument-grid {
 		display: flex;
 		flex-direction: column;
@@ -743,6 +1146,24 @@
 			top: 20px;
 			left: 20px;
 		}
+	}
+
+	/* Scrollbar Styling */
+	.control-panel::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.control-panel::-webkit-scrollbar-track {
+		background: rgba(255, 255, 255, 0.1);
+	}
+
+	.control-panel::-webkit-scrollbar-thumb {
+		background: linear-gradient(45deg, #3398F1, #1164B6);
+		border-radius: 3px;
+	}
+
+	.control-panel::-webkit-scrollbar-thumb:hover {
+		background: linear-gradient(45deg, #1164B6, #3398F1);
 	}
 
 	/* Scrollbar Styling */

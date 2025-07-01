@@ -23,6 +23,15 @@
 	let isGlobeRotating = true; // Enable/disable globe rotation
 	let gridGroup: THREE.Group; // Reference to the grid lines
 	let persistentDotsGroup: THREE.Group; // Reference to persistent dots group
+	let shockwavesGroup: THREE.Group; // Reference to shockwaves group for rotation sync
+
+	// Instrument toggle states
+	let useAlternativeInstruments = {
+		deep: false,    // false = accordion, true = brass
+		medium: false,  // false = piano, true = saxophone  
+		shallow: false, // false = violin, true = clarinet
+		catastrophic: false // false = percussion, true = gong
+	};
 
 	//Test Commit
 	// Performance optimization: Pre-load audio buffers
@@ -41,35 +50,68 @@
 	const targetFPS = 60;
 	const frameInterval = 1000 / targetFPS;
 
-	// New Sound mapping: Depth determines instrument, Magnitude determines pitch and volume
+	// New Sound mapping with instrument toggles: Depth determines instrument, Magnitude determines pitch and volume
 	const getSoundFile = (magnitude: number, depth: number): string => {
 		if (depth > 100) {
-			// Depth > 100: Accordion (RED) - 6 tones between 5.5-7.5
-			if (magnitude >= 7.5) return "/accordion/g2.wav";
-			else if (magnitude >= 7.0) return "/accordion/f2.wav";
-			else if (magnitude >= 6.5) return "/accordion/e2.wav";
-			else if (magnitude >= 6.0) return "/accordion/d2.wav";
-			else if (magnitude >= 5.8) return "/accordion/c2.wav";
-			else if (magnitude >= 5.5) return "/accordion/b2.wav";
-			else return "/accordion/a2.wav"; // fallback for < 5.5
+			// Deep earthquakes: Accordion OR Brass
+			if (useAlternativeInstruments.deep) {
+				// Brass: numbered 1-6 (1=lowest, 6=highest)
+				if (magnitude >= 7.5) return "/toggleInstruments/brassEnsemble/brass6.wav";
+				else if (magnitude >= 7.0) return "/toggleInstruments/brassEnsemble/brass5.wav";
+				else if (magnitude >= 6.5) return "/toggleInstruments/brassEnsemble/brass4.wav";
+				else if (magnitude >= 6.0) return "/toggleInstruments/brassEnsemble/brass3.wav";
+				else if (magnitude >= 5.8) return "/toggleInstruments/brassEnsemble/brass2.wav";
+				else return "/toggleInstruments/brassEnsemble/brass1.wav";
+			} else {
+				// Original accordion mapping
+				if (magnitude >= 7.5) return "/accordion/g2.wav";
+				else if (magnitude >= 7.0) return "/accordion/f2.wav";
+				else if (magnitude >= 6.5) return "/accordion/e2.wav";
+				else if (magnitude >= 6.0) return "/accordion/d2.wav";
+				else if (magnitude >= 5.8) return "/accordion/c2.wav";
+				else if (magnitude >= 5.5) return "/accordion/b2.wav";
+				else return "/accordion/a2.wav";
+			}
 		} else if (depth >= 30) {
-			// Depth 30-100: Piano (YELLOW) - 6 tones between 5.5-7.5
-			if (magnitude >= 7.5) return "/piano/C1.wav";
-			else if (magnitude >= 7.0) return "/piano/E1.wav";
-			else if (magnitude >= 6.5) return "/piano/G1.wav";
-			else if (magnitude >= 6.0) return "/piano/C2.wav";
-			else if (magnitude >= 5.8) return "/piano/E2.wav";
-			else if (magnitude >= 5.5) return "/piano/C3.wav";
-			else return "/piano/G4.wav"; // fallback for < 5.5
+			// Medium depth earthquakes: Piano OR Saxophone
+			if (useAlternativeInstruments.medium) {
+				// Saxophone: numbered 1-6 (1=lowest, 6=highest)
+				if (magnitude >= 7.5) return "/toggleInstruments/saxophone/sax6.wav";
+				else if (magnitude >= 7.0) return "/toggleInstruments/saxophone/sax5.wav";
+				else if (magnitude >= 6.5) return "/toggleInstruments/saxophone/sax4.wav";
+				else if (magnitude >= 6.0) return "/toggleInstruments/saxophone/sax3.wav";
+				else if (magnitude >= 5.8) return "/toggleInstruments/saxophone/sax2.wav";
+				else return "/toggleInstruments/saxophone/sax1.wav";
+			} else {
+				// Original piano mapping
+				if (magnitude >= 7.5) return "/piano/C1.wav";
+				else if (magnitude >= 7.0) return "/piano/E1.wav";
+				else if (magnitude >= 6.5) return "/piano/G1.wav";
+				else if (magnitude >= 6.0) return "/piano/C2.wav";
+				else if (magnitude >= 5.8) return "/piano/E2.wav";
+				else if (magnitude >= 5.5) return "/piano/C3.wav";
+				else return "/piano/G4.wav";
+			}
 		} else {
-			// Depth 0-30: Violin (BLUE) - 6 tones between 5.5-7.5
-			if (magnitude >= 7.5) return "/violin/g3.wav";
-			else if (magnitude >= 7.0) return "/violin/c4.wav";
-			else if (magnitude >= 6.5) return "/violin/e4.wav";
-			else if (magnitude >= 6.0) return "/violin/g4.wav";
-			else if (magnitude >= 5.8) return "/violin/a5.wav";
-			else if (magnitude >= 5.5) return "/violin/a6.wav";
-			else return "/violin/a6.wav"; // fallback for < 5.5
+			// Shallow earthquakes: Violin OR Clarinet
+			if (useAlternativeInstruments.shallow) {
+				// Clarinet: numbered 1-6 (1=lowest, 6=highest)
+				if (magnitude >= 7.5) return "/toggleInstruments/clarinet/clari6.wav";
+				else if (magnitude >= 7.0) return "/toggleInstruments/clarinet/clari5.wav";
+				else if (magnitude >= 6.5) return "/toggleInstruments/clarinet/clari4.wav";
+				else if (magnitude >= 6.0) return "/toggleInstruments/clarinet/clari3.wav";
+				else if (magnitude >= 5.8) return "/toggleInstruments/clarinet/clari2.wav";
+				else return "/toggleInstruments/clarinet/clari1.wav";
+			} else {
+				// Original violin mapping
+				if (magnitude >= 7.5) return "/violin/g3.wav";
+				else if (magnitude >= 7.0) return "/violin/c4.wav";
+				else if (magnitude >= 6.5) return "/violin/e4.wav";
+				else if (magnitude >= 6.0) return "/violin/g4.wav";
+				else if (magnitude >= 5.8) return "/violin/a5.wav";
+				else if (magnitude >= 5.5) return "/violin/a6.wav";
+				else return "/violin/a6.wav";
+			}
 		}
 	};
 
@@ -99,9 +141,15 @@
 		return minVolume + normalizedMagnitude * volumeRange;
 	};
 
-	// Get percussion sound for magnitude 8+ events
+	// Get percussion sound for magnitude 8+ events with Gong toggle
 	const getPercussionSound = (): string => {
-		return "/percussion/b5.wav";
+		if (useAlternativeInstruments.catastrophic) {
+			// Use Gong for catastrophic events
+			return "/toggleInstruments/gong/gong.mp3";
+		} else {
+			// Original percussion
+			return "/percussion/b5.wav";
+		}
 	};
 
 	// Color mapping based on new depth ranges and instruments with magnitude-based gradients
@@ -158,36 +206,64 @@
 		try {
 			if (!audioContext) {
 				audioContext = new AudioContext();
-			}
-			const audioFiles = [
-				// Accordion sounds
-				"/accordion/g2.wav",
-				"/accordion/f2.wav",
-				"/accordion/e2.wav",
-				"/accordion/d2.wav",
-				"/accordion/c2.wav",
-				"/accordion/b2.wav",
-				"/accordion/a2.wav",
+			}		const audioFiles = [
+			// Original instruments
+			// Accordion sounds
+			"/accordion/g2.wav",
+			"/accordion/f2.wav",
+			"/accordion/e2.wav",
+			"/accordion/d2.wav",
+			"/accordion/c2.wav",
+			"/accordion/b2.wav",
+			"/accordion/a2.wav",
 
-				// Piano sounds
-				"/piano/C1.wav",
-				"/piano/E1.wav",
-				"/piano/G1.wav",
-				"/piano/C3.wav",
-				"/piano/E4.wav",
-				"/piano/G4.wav",
+			// Piano sounds
+			"/piano/C1.wav",
+			"/piano/E1.wav",
+			"/piano/G1.wav",
+			"/piano/C3.wav",
+			"/piano/E4.wav",
+			"/piano/G4.wav",
 
-				// Violin sounds
-				"/violin/g3.wav",
-				"/violin/c4.wav",
-				"/violin/e4.wav",
-				"/violin/g4.wav",
-				"/violin/a5.wav",
-				"/violin/a6.wav",
+			// Violin sounds
+			"/violin/g3.wav",
+			"/violin/c4.wav",
+			"/violin/e4.wav",
+			"/violin/g4.wav",
+			"/violin/a5.wav",
+			"/violin/a6.wav",
 
-				// Percussion sounds for magnitude 8+ events
-				"/percussion/b5.wav",
-			];
+			// Percussion sounds for magnitude 8+ events
+			"/percussion/b5.wav",
+
+			// New alternative instruments
+			// Brass sounds (1-6, 1=lowest)
+			"/toggleInstruments/brassEnsemble/brass1.wav",
+			"/toggleInstruments/brassEnsemble/brass2.wav",
+			"/toggleInstruments/brassEnsemble/brass3.wav",
+			"/toggleInstruments/brassEnsemble/brass4.wav",
+			"/toggleInstruments/brassEnsemble/brass5.wav",
+			"/toggleInstruments/brassEnsemble/brass6.wav",
+
+			// Saxophone sounds (1-6, 1=lowest)
+			"/toggleInstruments/saxophone/sax1.wav",
+			"/toggleInstruments/saxophone/sax2.wav",
+			"/toggleInstruments/saxophone/sax3.wav",
+			"/toggleInstruments/saxophone/sax4.wav",
+			"/toggleInstruments/saxophone/sax5.wav",
+			"/toggleInstruments/saxophone/sax6.wav",
+
+			// Clarinet sounds (1-6, 1=lowest)
+			"/toggleInstruments/clarinet/clari1.wav",
+			"/toggleInstruments/clarinet/clari2.wav",
+			"/toggleInstruments/clarinet/clari3.wav",
+			"/toggleInstruments/clarinet/clari4.wav",
+			"/toggleInstruments/clarinet/clari5.wav",
+			"/toggleInstruments/clarinet/clari6.wav",
+
+			// Gong sound (single file)
+			"/toggleInstruments/gong/gong.mp3",
+		];
 
 			const loadPromises = audioFiles.map(async (file) => {
 				try {
@@ -618,7 +694,7 @@
 		// Position the shockwave at the globe center (the shader will handle the positioning)
 		shockwave.position.set(0, 0, 0);
 
-		scene.add(shockwave);
+		shockwavesGroup.add(shockwave);
 		earthquakeDots.push(shockwave);
 
 		// Create persistent dot at earthquake epicenter
@@ -640,14 +716,14 @@
 				lon,
 			);
 			catastrophicShockwave.position.set(0, 0, 0);
-			scene.add(catastrophicShockwave);
+			shockwavesGroup.add(catastrophicShockwave);
 			earthquakeDots.push(catastrophicShockwave);
 		}
 	};
 
 	const clearDots = () => {
 		earthquakeDots.forEach((shockwave) => {
-			scene.remove(shockwave);
+			shockwavesGroup.remove(shockwave);
 			// Only dispose materials, not shared geometry
 			if (Array.isArray(shockwave.material)) {
 				shockwave.material.forEach((mat: any) => mat.dispose());
@@ -683,7 +759,7 @@
 
 			if (progress >= 1) {
 				// Remove finished shockwave
-				scene.remove(shockwave);
+				shockwavesGroup.remove(shockwave);
 				// Note: Shared geometry should not be disposed here
 				if (Array.isArray(shockwave.material)) {
 					shockwave.material.forEach((mat: any) => mat.dispose());
@@ -1282,6 +1358,10 @@
 			persistentDotsGroup = new THREE.Group();
 			scene.add(persistentDotsGroup);
 
+			// Create group for shockwaves
+			shockwavesGroup = new THREE.Group();
+			scene.add(shockwavesGroup);
+
 			// Add lighting
 			const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
 			scene.add(ambientLight);
@@ -1316,13 +1396,10 @@
 								globeRotationSpeed;
 						}
 
-						// Rotate all shockwaves
-						earthquakeDots.forEach((shockwave) => {
-							shockwave.rotateOnWorldAxis(
-								new THREE.Vector3(0, 1, 0),
-								globeRotationSpeed,
-							);
-						});
+						// Rotate shockwaves group (synchronized with dots and globe)
+						if (shockwavesGroup) {
+							shockwavesGroup.rotation.y += globeRotationSpeed;
+						}
 					}
 
 					controls.update();
@@ -1457,6 +1534,12 @@
 	function handleYearChange(event: CustomEvent<number>) {
 		jumpToYear(event.detail);
 	}
+
+	// Event handlers für neue Instrument-Toggles
+	function handleAlternativeInstrumentToggle(event: CustomEvent<{type: 'deep' | 'medium' | 'shallow' | 'catastrophic'}>) {
+		const { type } = event.detail;
+		useAlternativeInstruments[type] = !useAlternativeInstruments[type];
+	}
 </script>
 
 <div class="container">
@@ -1494,6 +1577,7 @@
 		{isGlobeRotating}
 		{animationSpeed}
 		{instrumentEnabled}
+		{useAlternativeInstruments}
 		{currentYear}
 		{hasPlayed}
 		{minYear}
@@ -1505,6 +1589,7 @@
 		on:speedChange={handleSpeedChange}
 		on:instrumentToggle={handleInstrumentToggle}
 		on:yearChange={handleYearChange}
+		on:alternativeInstrumentToggle={handleAlternativeInstrumentToggle}
 	/>
 </div>
 
